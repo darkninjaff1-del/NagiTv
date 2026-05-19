@@ -1,7 +1,8 @@
 --[[
-    🔴 ITACHI HUB - UNIVERSAL EXECUTOR
-    CodeX + Krnl + Fluxus + Delta + Solara + All
-    Version 9.0.0 FINAL
+    🔴 ITACHI HUB - UNIVERSAL EXECUTOR v9.0
+    GitHub: darkninjaff1-del/NagiTv
+    Compatível: CodeX, Krnl, Fluxus, Delta, Solara, Wave, Vega X
+    20 Abas | 150+ Funções | Anti-Ban Completo
 ]]
 
 local s, e = pcall(function()
@@ -596,8 +597,6 @@ RS.Heartbeat:Connect(function()
     
     if CF.AutoBoss then
         pcall(function()
-            local c = GCS()
-            if not c then return end
             local b = GB()
             if #b > 0 then
                 STP(b[1].HumanoidRootPart.Position + Vector3.new(0,10,0))
@@ -811,7 +810,7 @@ local function Notify(title, msg)
     end)
 end
 
-Notify("🛡️ ITACHI HUB", "v9.0 Universal | 20 Tabs | Anti-Ban")
+Notify("🛡️ ITACHI HUB", "v9.0 Universal | 20 Tabs | Anti-Ban | github.com/darkninjaff1-del/NagiTv")
 
 end)
 
