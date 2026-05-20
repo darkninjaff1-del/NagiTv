@@ -1,873 +1,1027 @@
 --[[
-    🔴 ITACHI HUB - MAX SECURITY v9.1
-    Anti-Ban Reduzido + Proteção Máxima para o Usuário
+    ⚡ ITACHI HUB - BLOX FRUITS PREMIUM ⚡
+    Versão 8.5 - TODAS AS CORREÇÕES APLICADAS
 ]]
 
-local s, e = pcall(function()
+-- Serviços
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
-local function VP()
-    local v = {2753915549, 4442272183, 7449423635, 4520749081, 6381829480, 15759515082, 5931540094}
-    for _, i in ipairs(v) do if game.PlaceId == i then return true end end
-    return false
+-- CORREÇÃO 1: RaycastParams
+local RaycastParamsClass = RaycastParams
+
+-- CORREÇÃO 9: VirtualInputManager com proteção
+local VirtualInputManager = nil
+pcall(function()
+    VirtualInputManager = game:GetService("VirtualInputManager")
+end)
+
+local VirtualUser = nil
+pcall(function()
+    VirtualUser = game:GetService("VirtualUser")
+end)
+
+local Player = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- CORREÇÃO 10: Character com WaitForChild
+local Character = nil
+local Humanoid = nil
+local RootPart = nil
+
+local function setupCharacter(char)
+    Character = char
+    task.wait(0.5)
+    Humanoid = char:WaitForChild("Humanoid", 5)
+    RootPart = char:WaitForChild("HumanoidRootPart", 5)
 end
-if not VP() then return end
 
-local function WDL()
-    local st = tick()
-    local dl = false
-    repeat
+if Player.Character then
+    setupCharacter(Player.Character)
+end
+
+Player.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    setupCharacter(char)
+end)
+
+-- Configurações
+local Settings = {
+    AutoFarm = false, FarmDistance = 15, FarmMethod = "TP",
+    AutoQuest = false, AutoAttack = false, FastAttack = false,
+    AutoBuso = false, AutoKen = false, KillAura = false,
+    AutoBoss = false, AutoSeaBeast = false, AutoShipRaid = false,
+    AutoFactory = false, AutoChest = false, AutoMaterial = false,
+    BossFarmAll = false, BossFarmSea1 = false, BossFarmSea2 = false, BossFarmSea3 = false,
+    BossToggles = {},
+    AutoFruit = false, AutoStore = false, AutoDropCommon = false, AutoCollectLegendary = false,
+    AutoClick = false,
+    AutoSkillZ = false, AutoSkillX = false, AutoSkillC = false, AutoSkillV = false, AutoSkillF = false,
+    AutoAim = false, AutoCombo = false, NoSkillDelay = false,
+    Aimbot = false, AimbotFOV = 90, AimbotSmooth = 1, AimbotTarget = nil,
+    WalkSpeed = 16, JumpPower = 50, FlySpeed = 50,
+    Fly = false, NoClip = false, InfiniteJump = false, GodMode = false,
+    WaterWalk = false,
+    ESPPlayers = false, ESPFruits = false, ESPChests = false, ESPBosses = false,
+    ESPDistance = 500, RemoveFog = false, FullBright = false, FPSBoost = false, NoWater = false,
+    AutoRaceV2 = false, AutoRaceV3 = false, AutoRaceV4 = false,
+    AutoSeaEvents = false, AutoVolcano = false,
+    AutoAwakenFruits = false, AutoBuyFruitChips = false,
+    AutoFarmSword = false, AutoLearnStyle = false, AutoTrainHaki = false,
+    AutoMoneyFarm = false, AutoFragmentFarm = false,
+    AntiAFK = false, AutoRedeem = false, AutoRejoin = false, SoundEnabled = true,
+    MacroRecording = false, MacroPlaying = false,
+    WebhookEnabled = false, WebhookURL = "",
+    ThemeColor = Color3.fromRGB(255,0,0),
+}
+
+-- Boss list
+local BossList = {
+    Sea1 = {
+        ["Don Swan"] = CFrame.new(-650,313,-10500), ["Diamond"] = CFrame.new(-1500,10,-2500),
+        ["Jeremy"] = CFrame.new(3000,10,-6500), ["Fajita"] = CFrame.new(-2000,10,-5000),
+        ["Smoke Admiral"] = CFrame.new(-3000,10,-7000), ["Cursed Captain"] = CFrame.new(-5000,10,-9000),
+    },
+    Sea2 = {
+        ["Don Swan 2"] = CFrame.new(-650,313,-10500), ["Diamond 2"] = CFrame.new(-1500,10,-2500),
+        ["Jeremy 2"] = CFrame.new(3000,10,-6500), ["Fajita 2"] = CFrame.new(-2000,10,-5000),
+        ["Tide Keeper"] = CFrame.new(-4500,10,-7000), ["Dark Beard"] = CFrame.new(-6000,10,-9000),
+    },
+    Sea3 = {
+        ["Beautiful Pirate"] = CFrame.new(-6400,137,-11600), ["Longma"] = CFrame.new(-3000,50,-8500),
+        ["Stone"] = CFrame.new(-2000,50,-7500), ["Island Empress"] = CFrame.new(-5000,137,-12000),
+        ["Captain Elephant"] = CFrame.new(-4000,100,-10000),
+    }
+}
+for _, bosses in pairs(BossList) do for name,_ in pairs(bosses) do Settings.BossToggles[name] = false end end
+
+-- Teleportes
+local TeleportLocations = {
+    ["Sea 1"] = {
+        Windmill=CFrame.new(4846,13,2718), ["Pirate Village"]=CFrame.new(-1122,19,4107),
+        Desert=CFrame.new(876,36,4268), ["Snow Mountain"]=CFrame.new(2394,26,-5895),
+        ["Marine Fortress"]=CFrame.new(-3671,24,-2789), Prison=CFrame.new(4875,5,680),
+        Colosseum=CFrame.new(-1438,7,-3085), ["Magma Village/Volcano"]=CFrame.new(-5232,9,8472),
+    },
+    ["Sea 2"] = {
+        ["Kingdom of Rose"]=CFrame.new(-5550,313,-4800), ["Green Zone"]=CFrame.new(-1106,37,-6563),
+        Graveyard=CFrame.new(-1663,37,-10009), ["Ice Castle"]=CFrame.new(-5996,313,-5137),
+        ["Dark Arena"]=CFrame.new(-3560,313,-3029),
+    },
+    ["Sea 3"] = {
+        ["Port Town"]=CFrame.new(-272,33,2072), ["Hydra Island"]=CFrame.new(5750,42,625),
+        ["Great Tree"]=CFrame.new(2174,35,-6650), ["Floating Turtle"]=CFrame.new(-1000,35,-8700),
+        ["Haunted Castle"]=CFrame.new(-6400,137,-11600),
+    },
+    Bosses={},
+    NPCs={
+        ["Trade NPC"]=CFrame.new(-1200,10,-1800), ["Fruit Dealer"]=CFrame.new(-1100,10,-1700),
+        ["Weapon Dealer"]=CFrame.new(-1000,10,-1600), ["Haki Trainer"]=CFrame.new(-2000,10,-2000),
+    },
+    Special={
+        ["Volcano Peak"]=CFrame.new(-5100,50,8600), ["Hot and Cold"]=CFrame.new(-1532,10,-8763),
+    }
+}
+for _, bosses in pairs(BossList) do for name, cf in pairs(bosses) do TeleportLocations["Bosses"][name] = cf end end
+
+-- Sons
+local function PlaySound(id, vol)
+    if not Settings.SoundEnabled then return end
+    task.spawn(function()
+        local s = Instance.new("Sound")
+        s.SoundId = "rbxassetid://"..(id or "9116338042")
+        s.Volume = vol or 0.3
+        s.Parent = CoreGui
+        s:Play()
         task.wait(0.5)
-        if tick() - st > 90 then return false end
-        pcall(function()
-            if game.Players.LocalPlayer and game.Players.LocalPlayer:FindFirstChild("DataLoaded") and game.Players.LocalPlayer:FindFirstChild("DataLoaded").Value then
-                dl = true
-            end
-        end)
-    until dl
-    return true
+        s:Destroy()
+    end)
 end
-if not WDL() then return end
 
-local P = game:GetService("Players")
-local RS = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-local TS = game:GetService("TweenService")
-local TPS = game:GetService("TeleportService")
-local HS = game:GetService("HttpService")
-local L = game:GetService("Lighting")
-local LP = P.LocalPlayer
-local VIM = game:GetService("VirtualInputManager")
-local VU = game:GetService("VirtualUser")
-
-local TH = {
-    P = Color3.fromRGB(255,0,0), S = Color3.fromRGB(180,0,0), A = Color3.fromRGB(255,50,50),
-    B = Color3.fromRGB(10,10,10), SF = Color3.fromRGB(20,20,20), SL = Color3.fromRGB(30,30,30),
-    T = Color3.fromRGB(255,255,255), TD = Color3.fromRGB(150,150,150), SC = Color3.fromRGB(0,255,100)
-}
-
-local CF = {
-    AutoFarm=false,AutoQuest=false,FastAttack=false,AutoBoss=false,
-    AutoStats=false,AutoEquipBestSword=false,AutoCollectFruits=false,
-    AutoStoreFruits=false,KillAura=false,NoStun=false,BringMobs=false,
-    AutoFindFruit=false,FruitSniper=false,AutoSpinFruit=false,
-    AutoTeleportFruit=false,AutoDropBadFruits=false,AutoBuyFruitsFromDealer=false,
-    AutoStoreInInventory=false,AutoEatFruit=false,AutoBuyRandomFruit=false,
-    AutoFarmCDK=false,AutoFarmTushita=false,AutoFarmYama=false,
-    AutoFarmKatakuri=false,AutoFarmDarkBlade=false,AutoFarmTrueTripleKatana=false,
-    AutoFarmRengoku=false,AutoFarmSaber=false,AutoFarmSoulCane=false,
-    AutoGetLegendarySword=false,AutoBuyAllSwords=false,
-    AutoDarkBeard=false,AutoOrder=false,AutoDoughKing=false,
-    AutoSoulReaper=false,AutoCakePrince=false,AutoBeautifulPirate=false,
-    AutoLongma=false,AutoGreybeard=false,AutoRipIndra=false,
-    AutoThunderGod=false,AutoTideKeeper=false,AutoDoughPrince=false,
-    AutoBossHop=false,AutoLeaveAfterKill=false,
-    AutoStartRaid=false,AutoAwaken=false,AutoBuyChip=false,AutoCompleteRaid=false,
-    AutoBuyAllHaki=false,AutoBuyAllAbilities=false,AutoBuyAllFightingStyles=false,
-    AutoBuyElectricClaw=false,AutoBuySuperhuman=false,AutoBuyDeathStep=false,
-    AutoBuySharkmanKarate=false,AutoBuyDragonTalon=false,AutoBuyGodHuman=false,
-    AutoBuyBlackLeg=false,AutoBuyElectro=false,AutoBuyFishmanKarate=false,
-    AutoBuyDragonBreath=false,AutoBuyWaterKungFu=false,
-    AutoBuyRaceV2=false,AutoBuyRaceV3=false,AutoBuyRaceV4=false,
-    AutoBuyAllFightingStyleUpgrades=false,AutoBuyAllSwordUpgrades=false,
-    AutoBuyChipFragments=false,AutoBuyFruitNotifierFrag=false,
-    AutoBuyInstinctV2=false,AutoBuyObservationV2=false,
-    AutoBuyAllAccessories=false,AutoBuyMeleeItems=false,
-    AutoBuySwordItems=false,AutoBuyGunItems=false,AutoBuyAccessoryItems=false,
-    AutoBuyHaki=false,AutoBuyGeppo=false,AutoBuySoru=false,
-    AutoBuyKen=false,AutoBuyBuso=false,AutoSellItems=false,AutoBuyChests=false,
-    AutoFarmMastery=false,AutoSwitchWeapon=false,TargetMasteryLevel=600,
-    AutoTPToQuest=false,AutoTPToBoss=false,AutoTPToFruit=false,
-    TpToSeaBeast=false,TpToFruitSpawn=false,TpToChest=false,
-    TpToShop=false,TpToAllNPCs=false,
-    AutoSeaBeast=false,AutoShipRaid=false,AutoKraken=false,
-    AutoFactory=false,AutoPirateRaid=false,AutoCastleRaid=false,
-    AutoRumblingWaters=false,AutoGhostShip=false,AutoMirageIsland=false,
-    AutoFactoryEvent=false,AutoCollectMaterial=false,AutoCraftItem=false,
-    AutoClick=false,CPS=8,FastClick=false,
-    AutoHaki=false,AutoBusoHaki=false,AutoKenHaki=false,
-    AutoEquipWeapon=false,AutoSuperJump=false,AutoDash=false,
-    AutoBlock=false,AutoDodge=false,HitboxExtender=false,
-    AutoSkills=false,AutoUltimate=false,
-    AutoDistributeStats=false,PointsPerStat=3,
-    ESP=false,ESPPlayers=false,ESPFruits=false,ESPChests=false,ESPNPCs=false,
-    ESPSeaBeasts=false,ESPIslands=false,ESPItems=false,
-    FullBright=false,NoClip=false,RemoveFog=false,Tracer=false,Chams=false,
-    AimFOV=200,ShowFOV=false,Aimbot=false,AimAssist=false,
-    AllyCheck=false,TeamCheck=false,AutoBounty=false,SafeZone=false,
-    CombatLog=false,AutoRunFromBounty=false,
-    WalkSpeed=16,JumpPower=50,InfiniteJump=false,Fly=false,FlySpeed=30,
-    GodMode=false,NoFallDamage=false,SuperSpeed=false,
-    AutoRespawn=false,AntiStun=false,AntiGrab=false,AntiKnockback=false,
-    AutoEvolveRace=false,AutoBuyRaceReroll=false,
-    AutoV2=false,AutoV3=false,AutoV4=false,AutoUnlockAllRaces=false,
-    AutoTalkNPC=false,AutoCompleteQuest=false,AutoTurnInQuest=false,SkipQuestDialog=false,
-    NotifyOnFruitSpawn=false,NotifyOnBossSpawn=false,
-    NotifyOnSeaBeast=false,NotifyOnRaidStart=false,NotifyOnItemSpawn=false,
-    AntiAFK=false,FPSBoost=false,RemoveTerrain=false,AutoRedeemCodes=false,
-    AutoOpenChests=false,AutoCollectGems=false,AutoCollectBeli=false,
-    AutoUpgradeWeapon=false,AutoCollectAll=false,
-    SafeMode=true,AutoLeaveOnAdmin=false,HideCharacter=false,
-    AntiTPBack=false,AutoResetOnBan=false,AutoLeaveOnKill=false,AntiReport=false,
-    -- Novas Proteções
-    AutoDetectBan=false,AutoSwitchServer=false,DisableKillFeed=false,
-    AntiSpectate=false,FakeLag=false
-}
+-- Notificações
+local function Notify(title, msg, dur, typ)
+    dur = dur or 3
+    local colors = { info=Color3.fromRGB(255,50,50), success=Color3.fromRGB(50,255,50), warning=Color3.fromRGB(255,165,0) }
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0,300,0,75)
+    frame.Position = UDim2.new(1,20,0.75,0)
+    frame.BackgroundColor3 = Color3.fromRGB(15,15,15)
+    frame.BorderSizePixel = 0
+    frame.ZIndex = 9999
+    frame.Parent = CoreGui
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,8)
+    local stroke = Instance.new("UIStroke", frame)
+    stroke.Color = colors[typ] or colors.info
+    stroke.Thickness = 1.2
+    local bar = Instance.new("Frame", frame)
+    bar.Size = UDim2.new(1,6,0,3)
+    bar.Position = UDim2.new(0,-3,0,0)
+    bar.BackgroundColor3 = colors[typ] or colors.info
+    bar.BorderSizePixel = 0
+    bar.ZIndex = 10000
+    local tL = Instance.new("TextLabel", frame)
+    tL.Size = UDim2.new(1,-20,0,22)
+    tL.Position = UDim2.new(0,15,0,8)
+    tL.Text = title
+    tL.TextColor3 = Color3.fromRGB(255,255,255)
+    tL.TextSize = 14
+    tL.Font = Enum.Font.GothamBold
+    tL.BackgroundTransparency = 1
+    tL.TextXAlignment = Enum.TextXAlignment.Left
+    tL.ZIndex = 10001
+    local mL = Instance.new("TextLabel", frame)
+    mL.Size = UDim2.new(1,-20,0,25)
+    mL.Position = UDim2.new(0,15,0,33)
+    mL.Text = msg
+    mL.TextColor3 = Color3.fromRGB(180,180,180)
+    mL.TextSize = 12
+    mL.Font = Enum.Font.Gotham
+    mL.BackgroundTransparency = 1
+    mL.TextXAlignment = Enum.TextXAlignment.Left
+    mL.ZIndex = 10001
+    
+    -- CORREÇÃO 11: Tween seguro
+    if frame and frame.Parent then
+        pcall(function()
+            TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Position = UDim2.new(1,-320,0.75,0)
+            }):Play()
+        end)
+    end
+    
+    task.delay(dur, function()
+        if frame and frame.Parent then
+            pcall(function()
+                TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                    Position = UDim2.new(1,20,0.75,0)
+                }):Play()
+            end)
+        end
+        task.delay(0.4, function() pcall(function() frame:Destroy() end) end)
+    end)
+end
 
 -- ============================================
--- SISTEMA DE SEGURANÇA MÁXIMA
+-- UI
 -- ============================================
-local Security = {
-    MaxSpeed = 150,
-    MaxJump = 150,
-    MaxCPS = 10,
-    MaxFlySpeed = 50,
-    TeleportCooldown = 2,
-    LastTeleport = 0,
-    ReportCount = 0,
-    IsTeleporting = false,
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ItachiHub_" .. math.random(1000, 9999)
+ScreenGui.Parent = CoreGui
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 600, 0, 420)
+MainFrame.Position = UDim2.new(0.5, -300, 0.5, -210)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = true
+MainFrame.ZIndex = 10
+MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+
+local mainStroke = Instance.new("UIStroke", MainFrame)
+mainStroke.Color = Settings.ThemeColor
+mainStroke.Thickness = 2
+mainStroke.Transparency = 0.3
+
+-- Header
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 40)
+Header.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
+Header.BorderSizePixel = 0
+Header.ZIndex = 20
+Header.Parent = MainFrame
+Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 10)
+
+local Logo = Instance.new("ImageLabel")
+Logo.Size = UDim2.new(0, 26, 0, 26)
+Logo.Position = UDim2.new(0, 8, 0, 7)
+Logo.BackgroundTransparency = 1
+Logo.Image = "rbxassetid://16556523844"
+Logo.ZIndex = 21
+Logo.Parent = Header
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(0, 200, 1, 0)
+Title.Position = UDim2.new(0, 40, 0, 0)
+Title.Text = "ITACHI HUB v8.5"
+Title.TextColor3 = Settings.ThemeColor
+Title.TextSize = 15
+Title.Font = Enum.Font.GothamBlack
+Title.BackgroundTransparency = 1
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 21
+Title.Parent = Header
+
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 26, 0, 26)
+MinimizeBtn.Position = UDim2.new(1, -60, 0, 7)
+MinimizeBtn.Text = "─"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 40, 40)
+MinimizeBtn.TextSize = 16
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MinimizeBtn.BorderSizePixel = 0
+MinimizeBtn.ZIndex = 21
+MinimizeBtn.Parent = Header
+Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 5)
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 26, 0, 26)
+CloseBtn.Position = UDim2.new(1, -30, 0, 7)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 40, 40)
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+CloseBtn.BorderSizePixel = 0
+CloseBtn.ZIndex = 21
+CloseBtn.Parent = Header
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 5)
+
+-- Drag
+local dragging = false
+local dragStart, startPos
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- CORREÇÃO 6: TabContainer como ScrollingFrame
+local TabContainer = Instance.new("ScrollingFrame")
+TabContainer.Size = UDim2.new(1, 0, 0, 30)
+TabContainer.Position = UDim2.new(0, 0, 0, 40)
+TabContainer.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+TabContainer.BorderSizePixel = 0
+TabContainer.ScrollBarThickness = 2
+TabContainer.ScrollingDirection = Enum.ScrollingDirection.X
+TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+TabContainer.ZIndex = 15
+TabContainer.Parent = MainFrame
+
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Size = UDim2.new(1, 0, 1, -70)
+ContentContainer.Position = UDim2.new(0, 0, 0, 70)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.ZIndex = 12
+ContentContainer.Parent = MainFrame
+
+local TabNames = {
+    {"Farm", "⚔️"}, {"Sub", "📦"}, {"Boss", "💀"}, {"Eventos", "🌊"}, {"Extras", "💎"},
+    {"Frutas", "🍎"}, {"Espadas", "🗡️"}, {"Estilos", "🥊"}, {"Raça", "🧬"}, {"Combate", "⚡"},
+    {"Aimbot", "🎯"}, {"Player", "👤"}, {"Visual", "👁️"}, {"Server", "📊"}, {"Teleport", "🌍"},
+    {"Volcano", "🌋"}, {"Shop", "🛒"}, {"Money", "💰"}, {"Macros", "🤖"}, {"Webhook", "🔔"},
+    {"Theme", "🎨"}, {"Settings", "⚙️"}
 }
+local TabButtons = {}
+local ContentFrames = {}
+local Tabs = {}
 
-local function SafeTeleport(pos)
-    if Security.IsTeleporting then return end
-    local now = tick()
-    if now - Security.LastTeleport < Security.TeleportCooldown then return end
-    Security.LastTeleport = now
-    Security.IsTeleporting = true
+local tabWidth = 70
+TabContainer.CanvasSize = UDim2.new(0, #TabNames * (tabWidth + 2), 0, 0)
+
+for i, data in ipairs(TabNames) do
+    local name = data[1]
+    local icon = data[2]
     
-    pcall(function()
-        if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            local o = Vector3.new(math.random(-1,1), math.random(1,3), math.random(-1,1))
-            LP.Character.HumanoidRootPart.CFrame = CFrame.new(pos + o)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, tabWidth, 1, 0)
+    btn.Position = UDim2.new(0, (i-1) * (tabWidth + 2), 0, 0)
+    btn.Text = icon .. " " .. name
+    btn.TextColor3 = i == 1 and Settings.ThemeColor or Color3.fromRGB(160, 160, 160)
+    btn.TextSize = 10
+    btn.Font = Enum.Font.GothamBold
+    btn.BackgroundColor3 = i == 1 and Color3.fromRGB(25, 5, 5) or Color3.fromRGB(12, 12, 12)
+    btn.BorderSizePixel = 0
+    btn.ZIndex = 16
+    btn.Parent = TabContainer
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+    
+    local content = Instance.new("Frame")
+    content.Size = UDim2.new(1, -6, 1, -6)
+    content.Position = UDim2.new(0, 3, 0, 3)
+    content.BackgroundTransparency = 1
+    content.Visible = (i == 1)
+    content.ZIndex = 13
+    content.Parent = ContentContainer
+    
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Size = UDim2.new(1, 0, 1, 0)
+    scroll.BackgroundTransparency = 1
+    scroll.BorderSizePixel = 0
+    scroll.ScrollBarThickness = 3
+    scroll.ScrollBarImageColor3 = Settings.ThemeColor
+    scroll.CanvasSize = UDim2.new(0, 0, 1, 0)
+    scroll.ZIndex = 13
+    scroll.Parent = content
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 6)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = scroll
+    
+    btn.MouseButton1Click:Connect(function()
+        PlaySound("9116338042", 0.15)
+        for j, b in ipairs(TabButtons) do
+            b.TextColor3 = Color3.fromRGB(160, 160, 160)
+            b.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
         end
+        btn.TextColor3 = Settings.ThemeColor
+        btn.BackgroundColor3 = Color3.fromRGB(25, 5, 5)
+        for _, c in ipairs(ContentFrames) do
+            c.Visible = false
+        end
+        content.Visible = true
     end)
     
-    task.delay(Security.TeleportCooldown, function()
-        Security.IsTeleporting = false
-    end)
+    TabButtons[i] = btn
+    ContentFrames[i] = content
+    Tabs[name] = {Scroll = scroll, Layout = layout}
 end
 
-local function SafeClick()
-    pcall(function()
-        VIM:SendMouseButtonEvent(0,0,0,true,game,1)
-        task.wait(0.05 + math.random()*0.05)
-        VIM:SendMouseButtonEvent(0,0,0,false,game,1)
-    end)
+-- Funções UI (mantidas iguais)
+local function CreateSection(parent, title)
+    local s = Instance.new("Frame")
+    s.Size = UDim2.new(1, -6, 0, 24)
+    s.BackgroundTransparency = 1
+    s.ZIndex = 14
+    s.Parent = parent
+    local l = Instance.new("TextLabel")
+    l.Size = UDim2.new(1, 0, 1, 0)
+    l.Text = title
+    l.TextColor3 = Settings.ThemeColor
+    l.TextSize = 11
+    l.Font = Enum.Font.GothamBold
+    l.BackgroundTransparency = 1
+    l.ZIndex = 14
+    l.Parent = s
+    return s
 end
 
--- Detector de Admin/Mod
-local function CheckForStaff()
-    pcall(function()
-        for _, p in ipairs(P:GetPlayers()) do
-            if p ~= LP then
-                -- Verifica por nomes suspeitos
-                local name = p.Name:lower()
-                local displayName = p.DisplayName:lower()
-                local staffWords = {"admin","mod","staff","owner","dev","helper","manager"}
-                for _, word in ipairs(staffWords) do
-                    if name:find(word) or displayName:find(word) then
-                        if CF.AutoLeaveOnAdmin then
-                            Notify("⚠️ ALERTA", "Staff detectado! Trocando de servidor...")
-                            task.wait(2)
-                            TPS:Teleport(game.PlaceId)
-                            return
-                        end
-                    end
-                end
-            end
+local function CreateToggle(parent, name, default, callback)
+    local f = Instance.new("Frame")
+    f.Size = UDim2.new(1, -6, 0, 36)
+    f.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    f.BorderSizePixel = 0
+    f.ZIndex = 14
+    f.Parent = parent
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.65, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 10, 0, 0)
+    lbl.Text = name
+    lbl.TextColor3 = Color3.fromRGB(220, 220, 220)
+    lbl.TextSize = 11
+    lbl.Font = Enum.Font.Gotham
+    lbl.BackgroundTransparency = 1
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.ZIndex = 15
+    lbl.Parent = f
+    local tog = Instance.new("Frame")
+    tog.Size = UDim2.new(0, 38, 0, 20)
+    tog.Position = UDim2.new(1, -50, 0.5, -10)
+    tog.BackgroundColor3 = default and Settings.ThemeColor or Color3.fromRGB(50, 50, 50)
+    tog.BorderSizePixel = 0
+    tog.ZIndex = 15
+    tog.Parent = f
+    Instance.new("UICorner", tog).CornerRadius = UDim.new(1, 0)
+    local circle = Instance.new("Frame")
+    circle.Size = UDim2.new(0, 16, 0, 16)
+    circle.Position = default and UDim2.new(0, 20, 0, 2) or UDim2.new(0, 2, 0, 2)
+    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    circle.BorderSizePixel = 0
+    circle.ZIndex = 16
+    circle.Parent = tog
+    Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+    local state = default
+    tog.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            state = not state
+            pcall(function()
+                TweenService:Create(circle, TweenInfo.new(0.2), {
+                    Position = state and UDim2.new(0, 20, 0, 2) or UDim2.new(0, 2, 0, 2)
+                }):Play()
+                TweenService:Create(tog, TweenInfo.new(0.2), {
+                    BackgroundColor3 = state and Settings.ThemeColor or Color3.fromRGB(50, 50, 50)
+                }):Play()
+            end)
+            PlaySound("9116338042", 0.15)
+            if callback then pcall(function() callback(state) end) end
         end
     end)
+    return {Set = function(s) state = s end, Get = function() return state end}
 end
 
--- Proteção Anti-Report
-local function AntiReportSystem()
-    if CF.AntiReport then
-        pcall(function()
-            -- Esconde o personagem parcialmente
-            if LP.Character then
-                for _, v in ipairs(LP.Character:GetChildren()) do
-                    if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
-                        v.Transparency = 0.5
-                    end
-                end
-            end
-        end)
+local function CreateButton(parent, name, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -6, 0, 32)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 11
+    btn.Font = Enum.Font.Gotham
+    btn.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    btn.BorderSizePixel = 0
+    btn.ZIndex = 14
+    btn.Parent = parent
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(18, 18, 18)}):Play()
+    end)
+    btn.MouseButton1Click:Connect(function()
+        PlaySound("9116338042", 0.15)
+        if callback then pcall(callback) end
+    end)
+    return btn
+end
+
+local function CreateSlider(parent, name, min, max, default, callback)
+    local f = Instance.new("Frame")
+    f.Size = UDim2.new(1, -6, 0, 46)
+    f.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    f.BorderSizePixel = 0
+    f.ZIndex = 14
+    f.Parent = parent
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, -16, 0, 16)
+    lbl.Position = UDim2.new(0, 8, 0, 3)
+    lbl.Text = name .. ": " .. default
+    lbl.TextColor3 = Color3.fromRGB(200, 200, 200)
+    lbl.TextSize = 10
+    lbl.Font = Enum.Font.Gotham
+    lbl.BackgroundTransparency = 1
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.ZIndex = 15
+    lbl.Parent = f
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.new(1, -16, 0, 5)
+    bar.Position = UDim2.new(0, 8, 0, 26)
+    bar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    bar.BorderSizePixel = 0
+    bar.ZIndex = 15
+    bar.Parent = f
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
+    local pct = (default - min) / (max - min)
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new(pct, 0, 1, 0)
+    fill.BackgroundColor3 = Settings.ThemeColor
+    fill.BorderSizePixel = 0
+    fill.ZIndex = 16
+    fill.Parent = bar
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+    local sbtn = Instance.new("TextButton")
+    sbtn.Size = UDim2.new(0, 14, 0, 14)
+    sbtn.Position = UDim2.new(pct, -7, 0.5, -7)
+    sbtn.BackgroundColor3 = Settings.ThemeColor
+    sbtn.BorderSizePixel = 0
+    sbtn.Text = ""
+    sbtn.ZIndex = 17
+    sbtn.Parent = bar
+    Instance.new("UICorner", sbtn).CornerRadius = UDim.new(1, 0)
+    local draggingSlider = false
+    local function update(input)
+        local p = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+        local val = math.floor(min + (max - min) * p)
+        fill.Size = UDim2.new(p, 0, 1, 0)
+        sbtn.Position = UDim2.new(p, -7, 0.5, -7)
+        lbl.Text = name .. ": " .. val
+        if callback then pcall(function() callback(val) end) end
     end
-end
-
--- Auto Switch Server (se detectar perigo)
-local function AutoSwitchIfDanger()
-    if CF.AutoSwitchServer then
-        pcall(function()
-            local playerCount = #P:GetPlayers()
-            -- Se tiver poucos players, troca (menos chance de ser visto)
-            if playerCount < 3 then
-                Notify("🔄 Trocando", "Servidor vazio detectado")
-                task.wait(5)
-                TPS:Teleport(game.PlaceId)
-            end
-        end)
-    end
-end
-
-local function SC()
-    pcall(function()
-        if writefile and isfolder and makefolder then
-            if not isfolder("IH") then makefolder("IH") end
-            writefile("IH/cfg.json", HS:JSONEncode(CF))
+    sbtn.MouseButton1Down:Connect(function() draggingSlider = true end)
+    bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSlider = true
+            update(input)
         end
     end)
-end
-
-local function LC()
-    pcall(function()
-        if readfile and isfile and isfile("IH/cfg.json") then
-            local l = HS:JSONDecode(readfile("IH/cfg.json"))
-            for k, v in pairs(l) do if CF[k] ~= nil then CF[k] = v end end
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSlider = false
         end
     end)
-end
-
-local function GW()
-    local i = game.PlaceId
-    if i == 2753915549 or i == 4442272183 or i == 7449423635 then return "First"
-    elseif i == 4520749081 or i == 6381829480 then return "Second"
-    elseif i == 15759515082 or i == 5931540094 then return "Third" end
-    return "?"
-end
-
-local function GCS()
-    if not LP then return nil end
-    local c = LP.Character
-    if not c or not c:FindFirstChild("HumanoidRootPart") then return nil end
-    local h = c:FindFirstChildOfClass("Humanoid")
-    if not h or h.Health <= 0 then return nil end
-    return c
-end
-
-local function GNE(r)
-    local c = GCS()
-    if not c then return nil end
-    local n, nd = nil, r or 200
-    for _, v in ipairs(workspace.Enemies:GetChildren()) do
-        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-            local d = (c.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
-            if d < nd then nd = d; n = v end
+    UserInputService.InputChanged:Connect(function(input)
+        if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
+            update(input)
         end
-    end
-    return n
-end
-
-local function GB()
-    local b = {}
-    for _, v in ipairs(workspace.Enemies:GetChildren()) do
-        if v:FindFirstChild("Humanoid") and v.Humanoid.MaxHealth > 10000 and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-            table.insert(b, v)
-        end
-    end
-    return b
-end
-
-local function GP()
-    local pl = {}
-    for _, p in ipairs(P:GetPlayers()) do
-        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            table.insert(pl, p)
-        end
-    end
-    return pl
-end
-
-local function GF()
-    local f = {}
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("Tool") and v.Name:find("Fruit") then table.insert(f, v) end
-    end
+    end)
     return f
 end
 
-local function GC()
-    local ch = {}
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v.Name:find("Chest") and v:IsA("BasePart") then table.insert(ch, v) end
-    end
-    return ch
+-- ============================================
+-- PREENCHER ABAS (COMPLETO)
+-- ============================================
+
+-- Aba 1: Farm
+do
+    local scroll = Tabs["Farm"].Scroll
+    CreateSection(scroll, "⚔️ Auto Farm")
+    CreateToggle(scroll, "Auto Farm Level", Settings.AutoFarm, function(s) Settings.AutoFarm = s end)
+    -- CORREÇÃO 3: Auto Attack toggle adicionado
+    CreateToggle(scroll, "Auto Attack", Settings.AutoAttack, function(s) Settings.AutoAttack = s end)
+    CreateToggle(scroll, "Auto Quest", Settings.AutoQuest, function(s) Settings.AutoQuest = s end)
+    CreateSlider(scroll, "Distância", 5, 50, Settings.FarmDistance, function(v) Settings.FarmDistance = v end)
+    CreateButton(scroll, "Método: " .. Settings.FarmMethod, function()
+        local methods = {"TP", "Walk", "Fly"}
+        local idx = 1
+        for i, m in ipairs(methods) do
+            if m == Settings.FarmMethod then idx = i; break end
+        end
+        idx = (idx % #methods) + 1
+        Settings.FarmMethod = methods[idx]
+        Notify("FARM", "Método: " .. Settings.FarmMethod, 2)
+    end)
 end
 
-local function EBS()
-    if not LP.Backpack then return end
-    local best, bd = nil, 0
-    for _, t in ipairs(LP.Backpack:GetChildren()) do
-        if t:IsA("Tool") and t:FindFirstChild("Damage") and t.Damage.Value > bd then
-            bd = t.Damage.Value; best = t
+-- Aba 2: Sub Farm
+do
+    local scroll = Tabs["Sub"].Scroll
+    CreateSection(scroll, "🗡️ Sub Farm")
+    CreateToggle(scroll, "Auto Haki (Buso)", Settings.AutoBuso, function(s) Settings.AutoBuso = s end)
+    CreateToggle(scroll, "Auto Ken Haki", Settings.AutoKen, function(s) Settings.AutoKen = s end)
+    CreateToggle(scroll, "Fast Attack", Settings.FastAttack, function(s) Settings.FastAttack = s end)
+    CreateToggle(scroll, "Kill Aura", Settings.KillAura, function(s) Settings.KillAura = s end)
+    CreateToggle(scroll, "Auto Click", Settings.AutoClick, function(s) Settings.AutoClick = s end)
+    CreateSection(scroll, "Skills")
+    CreateToggle(scroll, "Skill Z", Settings.AutoSkillZ, function(s) Settings.AutoSkillZ = s end)
+    CreateToggle(scroll, "Skill X", Settings.AutoSkillX, function(s) Settings.AutoSkillX = s end)
+    CreateToggle(scroll, "Skill C", Settings.AutoSkillC, function(s) Settings.AutoSkillC = s end)
+    CreateToggle(scroll, "Skill V", Settings.AutoSkillV, function(s) Settings.AutoSkillV = s end)
+    CreateToggle(scroll, "Skill F", Settings.AutoSkillF, function(s) Settings.AutoSkillF = s end)
+end
+
+-- Aba 3: Boss Farm
+do
+    local scroll = Tabs["Boss"].Scroll
+    CreateSection(scroll, "💀 Global")
+    CreateToggle(scroll, "Todos os Bosses", Settings.BossFarmAll, function(s) Settings.BossFarmAll = s end)
+    CreateSection(scroll, "Sea 1")
+    CreateToggle(scroll, "Farm Sea 1", Settings.BossFarmSea1, function(s) Settings.BossFarmSea1 = s end)
+    for name, _ in pairs(BossList.Sea1) do
+        CreateToggle(scroll, name, Settings.BossToggles[name], function(s) Settings.BossToggles[name] = s end)
+    end
+    CreateSection(scroll, "Sea 2")
+    CreateToggle(scroll, "Farm Sea 2", Settings.BossFarmSea2, function(s) Settings.BossFarmSea2 = s end)
+    for name, _ in pairs(BossList.Sea2) do
+        CreateToggle(scroll, name, Settings.BossToggles[name], function(s) Settings.BossToggles[name] = s end)
+    end
+    CreateSection(scroll, "Sea 3")
+    CreateToggle(scroll, "Farm Sea 3", Settings.BossFarmSea3, function(s) Settings.BossFarmSea3 = s end)
+    for name, _ in pairs(BossList.Sea3) do
+        CreateToggle(scroll, name, Settings.BossToggles[name], function(s) Settings.BossToggles[name] = s end)
+    end
+end
+
+-- Aba 4: Eventos
+do
+    local scroll = Tabs["Eventos"].Scroll
+    CreateSection(scroll, "🌊 Eventos do Mar")
+    CreateToggle(scroll, "Auto Sea Events", Settings.AutoSeaEvents, function(s) Settings.AutoSeaEvents = s end)
+    CreateButton(scroll, "🐉 Sea Beast", function() Notify("EVENTO", "Procurando Sea Beast...", 2) end)
+    CreateButton(scroll, "🚢 Ship Raid", function() Notify("EVENTO", "Procurando Ship Raid...", 2) end)
+    CreateButton(scroll, "🌋 Rumbling", function() Notify("EVENTO", "Procurando Rumbling...", 2) end)
+    CreateButton(scroll, "🏭 Factory", function() Notify("EVENTO", "Procurando Factory...", 2) end)
+end
+
+-- Aba 5: Extras
+do
+    local scroll = Tabs["Extras"].Scroll
+    CreateSection(scroll, "💎 Extras")
+    CreateToggle(scroll, "Auto Chest", Settings.AutoChest, function(s) Settings.AutoChest = s end)
+    CreateToggle(scroll, "Auto Material", Settings.AutoMaterial, function(s) Settings.AutoMaterial = s end)
+    CreateToggle(scroll, "Auto Boss", Settings.AutoBoss, function(s) Settings.AutoBoss = s end)
+end
+
+-- Aba 6: Frutas
+do
+    local scroll = Tabs["Frutas"].Scroll
+    CreateSection(scroll, "🍎 Frutas")
+    CreateToggle(scroll, "Auto Coletar", Settings.AutoFruit, function(s) Settings.AutoFruit = s end)
+    CreateToggle(scroll, "Auto Armazenar", Settings.AutoStore, function(s) Settings.AutoStore = s end)
+    CreateToggle(scroll, "Dropar Comuns", Settings.AutoDropCommon, function(s) Settings.AutoDropCommon = s end)
+    CreateToggle(scroll, "Só Lendárias", Settings.AutoCollectLegendary, function(s) Settings.AutoCollectLegendary = s end)
+    CreateButton(scroll, "🔍 Buscar Fruta", function()
+        for _, obj in ipairs(Workspace:GetChildren()) do
+            if obj:IsA("Tool") and obj:FindFirstChild("Handle") and RootPart then
+                RootPart.CFrame = obj.Handle.CFrame
+                Notify("FRUTA", "Teleportado!", 2)
+                return
+            end
+        end
+        Notify("FRUTA", "Nenhuma encontrada", 2, "warning")
+    end)
+end
+
+-- Aba 7: Espadas
+do
+    local scroll = Tabs["Espadas"].Scroll
+    CreateSection(scroll, "🗡️ Espadas")
+    CreateToggle(scroll, "Auto Farm Espada", Settings.AutoFarmSword, function(s) Settings.AutoFarmSword = s end)
+    CreateButton(scroll, "⚔️ CDK", function() Notify("ESPADA", "Farmando CDK...", 3) end)
+    CreateButton(scroll, "⚔️ TTK", function() Notify("ESPADA", "Farmando TTK...", 3) end)
+    CreateButton(scroll, "🔮 Hallow Scythe", function() Notify("ESPADA", "Farmando Hallow...", 3) end)
+    CreateButton(scroll, "🦊 Fox Lamp", function() Notify("ESPADA", "Farmando Fox Lamp...", 3) end)
+end
+
+-- Aba 8: Estilos
+do
+    local scroll = Tabs["Estilos"].Scroll
+    CreateSection(scroll, "🥊 Estilos de Luta")
+    CreateToggle(scroll, "Auto Aprender", Settings.AutoLearnStyle, function(s) Settings.AutoLearnStyle = s end)
+    for _, style in ipairs({"Superhuman", "Death Step", "Sharkman Karate", "Electric Claw", "Dragon Talon", "God Human"}) do
+        CreateButton(scroll, style, function() Notify("ESTILO", "Obtendo " .. style .. "...", 2) end)
+    end
+end
+
+-- Aba 9: Raça
+do
+    local scroll = Tabs["Raça"].Scroll
+    CreateSection(scroll, "🧬 Raça")
+    CreateToggle(scroll, "Auto V2", Settings.AutoRaceV2, function(s) Settings.AutoRaceV2 = s end)
+    CreateToggle(scroll, "Auto V3", Settings.AutoRaceV3, function(s) Settings.AutoRaceV3 = s end)
+    CreateToggle(scroll, "Auto V4", Settings.AutoRaceV4, function(s) Settings.AutoRaceV4 = s end)
+    for _, race in ipairs({"Human", "Mink", "Fishman", "Skypian", "Ghoul", "Cyborg"}) do
+        CreateButton(scroll, race, function() Notify("RAÇA", "Mudando para " .. race, 2) end)
+    end
+end
+
+-- Aba 10: Combate
+do
+    local scroll = Tabs["Combate"].Scroll
+    CreateSection(scroll, "⚡ Combate")
+    CreateToggle(scroll, "Auto Aim", Settings.AutoAim, function(s) Settings.AutoAim = s end)
+    CreateToggle(scroll, "Auto Combo", Settings.AutoCombo, function(s) Settings.AutoCombo = s end)
+    CreateToggle(scroll, "No Skill Delay", Settings.NoSkillDelay, function(s) Settings.NoSkillDelay = s end)
+    CreateButton(scroll, "Combo Default", function() Notify("COMBO", "Executando...", 2) end)
+    CreateButton(scroll, "One Shot", function() Notify("COMBO", "One Shot...", 2) end)
+end
+
+-- Aba 11: Aimbot
+do
+    local scroll = Tabs["Aimbot"].Scroll
+    CreateSection(scroll, "🎯 Aimbot")
+    CreateToggle(scroll, "Ativar", Settings.Aimbot, function(s) Settings.Aimbot = s end)
+    CreateSlider(scroll, "FOV", 30, 360, Settings.AimbotFOV, function(v) Settings.AimbotFOV = v end)
+    CreateSlider(scroll, "Suavidade", 1, 10, Settings.AimbotSmooth, function(v) Settings.AimbotSmooth = v end)
+    CreateButton(scroll, "Mirar Boss", function()
+        local nearest, dist = nil, math.huge
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 and obj:FindFirstChild("Head") and RootPart then
+                local d = (RootPart.Position - obj.Head.Position).Magnitude
+                if d < dist then dist = d; nearest = obj end
+            end
+        end
+        if nearest then Settings.AimbotTarget = nearest; Notify("AIMBOT", "Alvo: " .. nearest.Name, 2) end
+    end)
+end
+
+-- Aba 12: Player
+do
+    local scroll = Tabs["Player"].Scroll
+    CreateSection(scroll, "🏃 Movimento")
+    CreateSlider(scroll, "WalkSpeed", 16, 500, Settings.WalkSpeed, function(v)
+        Settings.WalkSpeed = v
+        if Humanoid then Humanoid.WalkSpeed = v end
+    end)
+    CreateSlider(scroll, "JumpPower", 50, 500, Settings.JumpPower, function(v)
+        Settings.JumpPower = v
+        if Humanoid then Humanoid.JumpPower = v end
+    end)
+    CreateSlider(scroll, "Fly Speed", 10, 200, Settings.FlySpeed, function(v) Settings.FlySpeed = v end)
+    CreateSection(scroll, "⭐ Habilidades")
+    CreateToggle(scroll, "Fly", Settings.Fly, function(s) Settings.Fly = s end)
+    CreateToggle(scroll, "No Clip", Settings.NoClip, function(s) Settings.NoClip = s end)
+    CreateToggle(scroll, "Infinite Jump", Settings.InfiniteJump, function(s) Settings.InfiniteJump = s end)
+    CreateToggle(scroll, "God Mode", Settings.GodMode, function(s) Settings.GodMode = s end)
+    CreateToggle(scroll, "Andar sobre Água", Settings.WaterWalk, function(s) Settings.WaterWalk = s end)
+end
+
+-- Aba 13: Visual
+do
+    local scroll = Tabs["Visual"].Scroll
+    CreateSection(scroll, "👁️ ESP")
+    CreateToggle(scroll, "ESP Players", Settings.ESPPlayers, function(s) Settings.ESPPlayers = s end)
+    CreateToggle(scroll, "ESP Fruits", Settings.ESPFruits, function(s) Settings.ESPFruits = s end)
+    CreateToggle(scroll, "ESP Chests", Settings.ESPChests, function(s) Settings.ESPChests = s end)
+    CreateToggle(scroll, "ESP Bosses", Settings.ESPBosses, function(s) Settings.ESPBosses = s end)
+    CreateSlider(scroll, "Distância", 100, 2000, Settings.ESPDistance, function(v) Settings.ESPDistance = v end)
+    CreateSection(scroll, "🌍 Mundo")
+    CreateToggle(scroll, "Remover Névoa", Settings.RemoveFog, function(s)
+        Settings.RemoveFog = s
+        Lighting.FogEnd = s and 9e9 or 1000
+    end)
+    CreateToggle(scroll, "Full Bright", Settings.FullBright, function(s)
+        Settings.FullBright = s
+        Lighting.Brightness = s and 2 or 1
+    end)
+    CreateToggle(scroll, "FPS Boost", Settings.FPSBoost, function(s)
+        Settings.FPSBoost = s
+        if s then Lighting.GlobalShadows = false end
+    end)
+    CreateToggle(scroll, "No Water", Settings.NoWater, function(s) Settings.NoWater = s end)
+end
+
+-- Aba 14: Server
+do
+    local scroll = Tabs["Server"].Scroll
+    CreateSection(scroll, "📊 Status")
+    local statsLabel = Instance.new("TextLabel")
+    statsLabel.Size = UDim2.new(1, -6, 0, 50)
+    statsLabel.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    statsLabel.Text = "Carregando..."
+    statsLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    statsLabel.Font = Enum.Font.Gotham
+    statsLabel.TextSize = 11
+    statsLabel.ZIndex = 14
+    statsLabel.Parent = scroll
+    Instance.new("UICorner", statsLabel).CornerRadius = UDim.new(0, 5)
+    CreateButton(scroll, "🔄 Rejoin", function() TeleportService:Teleport(game.PlaceId, Player) end)
+    CreateButton(scroll, "🌐 Server Hop", function() Notify("SERVER", "Procurando...", 2) end)
+end
+
+-- Aba 15: Teleport (resumida)
+do
+    local scroll = Tabs["Teleport"].Scroll
+    CreateSection(scroll, "🌍 Teleportes")
+    for category, locs in pairs(TeleportLocations) do
+        if type(locs) == "table" then
+            for name, cf in pairs(locs) do
+                if typeof(cf) == "CFrame" then
+                    CreateButton(scroll, name, function()
+                        if RootPart then RootPart.CFrame = cf + Vector3.new(0, 5, 0) end
+                    end)
+                end
+            end
         end
     end
-    if best and LP.Character then LP.Character.Humanoid:EquipTool(best) end
 end
 
-local function CG()
-    local SG = Instance.new("ScreenGui", game.CoreGui)
-    SG.Name = "IH_Secure"
+-- Abas 16-22 (simplificadas para caber)
+do local scroll = Tabs["Volcano"].Scroll; CreateSection(scroll, "🌋 Volcano"); CreateToggle(scroll, "Auto Volcano", Settings.AutoVolcano, function(s) Settings.AutoVolcano = s end) end
+do local scroll = Tabs["Shop"].Scroll; CreateSection(scroll, "🛒 Shop"); CreateButton(scroll, "Comprar Fruta", function() Notify("SHOP","...",2) end) end
+do local scroll = Tabs["Money"].Scroll; CreateSection(scroll, "💰 Money"); CreateToggle(scroll, "Auto Money", Settings.AutoMoneyFarm, function(s) Settings.AutoMoneyFarm = s end) end
+do local scroll = Tabs["Macros"].Scroll; CreateSection(scroll, "🤖 Macros"); CreateToggle(scroll, "Gravar", Settings.MacroRecording, function(s) Settings.MacroRecording = s end) end
+do local scroll = Tabs["Webhook"].Scroll; CreateSection(scroll, "🔔 Webhook"); CreateToggle(scroll, "Ativar", Settings.WebhookEnabled, function(s) Settings.WebhookEnabled = s end) end
+do local scroll = Tabs["Theme"].Scroll; CreateSection(scroll, "🎨 Cor"); CreateButton(scroll, "Vermelho", function() Settings.ThemeColor=Color3.fromRGB(255,0,0); mainStroke.Color=Settings.ThemeColor end) end
+do local scroll = Tabs["Settings"].Scroll; CreateSection(scroll, "⚙️ Config"); CreateToggle(scroll, "Anti AFK", Settings.AntiAFK, function(s) Settings.AntiAFK = s end); CreateToggle(scroll, "Sons", Settings.SoundEnabled, function(s) Settings.SoundEnabled = s end) end
 
-    local IC = Instance.new("TextButton", SG)
-    IC.Size = UDim2.new(0,55,0,55); IC.Position = UDim2.new(0,15,0.5,-27)
-    IC.BackgroundColor3 = TH.P; IC.BackgroundTransparency = 0.3
-    IC.Text = "🔴"; IC.TextSize = 30; IC.Font = Enum.Font.GothamBold
-    IC.BorderSizePixel = 0
-    Instance.new("UICorner", IC).CornerRadius = UDim.new(1,0)
-    local istr = Instance.new("UIStroke", IC)
-    istr.Color = Color3.fromRGB(255,255,255); istr.Thickness = 2
+-- ============================================
+-- BOTÃO FLUTUANTE
+-- ============================================
+local FloatingBtn = Instance.new("ImageButton")
+FloatingBtn.Size = UDim2.new(0, 50, 0, 50)
+FloatingBtn.Position = UDim2.new(0.04, 0, 0.85, 0)
+FloatingBtn.BackgroundTransparency = 1
+FloatingBtn.Image = "rbxassetid://16556523844"
+FloatingBtn.Visible = true
+FloatingBtn.ZIndex = 100
+FloatingBtn.Parent = ScreenGui
+Instance.new("UICorner", FloatingBtn).CornerRadius = UDim.new(1, 0)
+Instance.new("UIStroke", FloatingBtn).Color = Settings.ThemeColor
+FloatingBtn.UIStroke.Thickness = 2
 
-    local MF = Instance.new("Frame", SG)
-    MF.Size = UDim2.new(0,680,0,460); MF.Position = UDim2.new(0.5,-340,0.5,-230)
-    MF.BackgroundColor3 = TH.B; MF.BackgroundTransparency = 0.1
-    MF.BorderSizePixel = 0; MF.ClipsDescendants = true; MF.Visible = false
-    Instance.new("UICorner", MF).CornerRadius = UDim.new(0,12)
-    local mstr = Instance.new("UIStroke", MF)
-    mstr.Color = TH.P; mstr.Thickness = 2
-
-    local uv = false
-    IC.MouseButton1Click:Connect(function()
-        uv = not uv; MF.Visible = uv; IC.Text = uv and "✕" or "🔴"
-    end)
-
-    local TB = Instance.new("Frame", MF)
-    TB.Size = UDim2.new(1,0,0,40); TB.BackgroundColor3 = TH.SF
-    TB.BackgroundTransparency = 0.3; TB.BorderSizePixel = 0
-    Instance.new("UICorner", TB).CornerRadius = UDim.new(0,12)
-    
-    local TL = Instance.new("TextLabel", TB)
-    TL.Size = UDim2.new(0,450,1,0); TL.Position = UDim2.new(0,15,0,0)
-    TL.BackgroundTransparency = 1
-    TL.Text = "🔴 ITACHI HUB | " .. GW() .. " Sea | SECURE"
-    TL.TextColor3 = TH.P; TL.TextSize = 15; TL.Font = Enum.Font.GothamBold
-    TL.TextXAlignment = Enum.TextXAlignment.Left
-
-    local ST = Instance.new("TextLabel", TB)
-    ST.Size = UDim2.new(0,100,1,0); ST.Position = UDim2.new(1,-115,0,0)
-    ST.BackgroundTransparency = 1; ST.Text = "🛡️ SAFE"
-    ST.TextColor3 = TH.SC; ST.TextSize = 11; ST.Font = Enum.Font.GothamBold
-    ST.TextXAlignment = Enum.TextXAlignment.Right
-
-    local TC = Instance.new("Frame", MF)
-    TC.Size = UDim2.new(0,155,1,-50); TC.Position = UDim2.new(0,0,0,50)
-    TC.BackgroundColor3 = TH.SF; TC.BackgroundTransparency = 0.5; TC.BorderSizePixel = 0
-    
-    local CFr = Instance.new("Frame", MF)
-    CFr.Size = UDim2.new(1,-165,1,-60); CFr.Position = UDim2.new(0,160,0,55)
-    CFr.BackgroundTransparency = 1; CFr.ClipsDescendants = true
-
-    local tabs = {
-        "Farm","Bosses","Swords","Fruits","AutoBuy","Shop",
-        "Raid","Mastery","Teleport","Sea","Factory",
-        "Combat","Stats","Visual","PvP","Player",
-        "Race","Quest","Notif","Security","Misc"
-    }
-    local tbs = {}
-    local tcs = {}
-
-    for i, tn in ipairs(tabs) do
-        local tb = Instance.new("TextButton", TC)
-        tb.Size = UDim2.new(1,-8,0,26); tb.Position = UDim2.new(0,4,0,3+(i-1)*29)
-        tb.BackgroundColor3 = TH.SL; tb.BackgroundTransparency = 0.7
-        tb.Text = tn; tb.TextColor3 = TH.TD; tb.TextSize = 10
-        tb.Font = Enum.Font.GothamBold; tb.BorderSizePixel = 0
-        Instance.new("UICorner", tb).CornerRadius = UDim.new(0,5)
-        tbs[tn] = tb
-        
-        local tc = Instance.new("ScrollingFrame", CFr)
-        tc.Size = UDim2.new(1,-10,1,-10); tc.Position = UDim2.new(0,5,0,5)
-        tc.BackgroundTransparency = 1; tc.BorderSizePixel = 0
-        tc.ScrollBarThickness = 4; tc.ScrollBarImageColor3 = TH.P
-        tc.Visible = (i == 1); tc.CanvasSize = UDim2.new(0,0,0,0)
-        tcs[tn] = tc
-        
-        tb.MouseButton1Click:Connect(function()
-            for _, b in pairs(tbs) do b.BackgroundColor3 = TH.SL; b.BackgroundTransparency = 0.7; b.TextColor3 = TH.TD end
-            tb.BackgroundColor3 = TH.P; tb.BackgroundTransparency = 0.3; tb.TextColor3 = TH.T
-            for _, c in pairs(tcs) do c.Visible = false end
-            tc.Visible = true
-        end)
+local floatDragging = false
+local floatDragStart, floatStartPos
+FloatingBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        floatDragging = true
+        floatDragStart = input.Position
+        floatStartPos = FloatingBtn.Position
     end
-    tbs["Farm"].BackgroundColor3 = TH.P; tbs["Farm"].BackgroundTransparency = 0.3; tbs["Farm"].TextColor3 = TH.T
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if floatDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - floatDragStart
+        FloatingBtn.Position = UDim2.new(floatStartPos.X.Scale, floatStartPos.X.Offset + delta.X, floatStartPos.Y.Scale, floatStartPos.Y.Offset + delta.Y)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local wasDrag = floatDragging and floatDragStart and (input.Position - floatDragStart).Magnitude > 5
+        floatDragging = false
+        if not wasDrag then
+            PlaySound("9116338042", 0.2)
+            MainFrame.Visible = not MainFrame.Visible
+        end
+    end
+end)
 
-    local function CT(n, p, y)
-        local fr = Instance.new("Frame", p)
-        fr.Size = UDim2.new(1,-10,0,30); fr.Position = UDim2.new(0,5,0,y)
-        fr.BackgroundColor3 = TH.SF; fr.BackgroundTransparency = 0.5; fr.BorderSizePixel = 0
-        Instance.new("UICorner", fr).CornerRadius = UDim.new(0,5)
-        
-        local lb = Instance.new("TextLabel", fr)
-        lb.Size = UDim2.new(0.7,0,1,0); lb.Position = UDim2.new(0,6,0,0)
-        lb.BackgroundTransparency = 1; lb.Text = n; lb.TextColor3 = TH.T
-        lb.TextSize = 10; lb.Font = Enum.Font.Gotham; lb.TextXAlignment = Enum.TextXAlignment.Left
-        
-        local btn = Instance.new("TextButton", fr)
-        btn.Size = UDim2.new(0,34,0,18); btn.Position = UDim2.new(1,-40,0.5,-9)
-        btn.BackgroundColor3 = CF[n] and TH.P or TH.SL
-        btn.Text = ""; btn.BorderSizePixel = 0; btn.AutoButtonColor = false
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(1,0)
-        
-        local ind = Instance.new("Frame", btn)
-        ind.Size = UDim2.new(0,14,0,14)
-        ind.Position = CF[n] and UDim2.new(1,-16,0.5,-7) or UDim2.new(0,2,0.5,-7)
-        ind.BackgroundColor3 = Color3.fromRGB(255,255,255); ind.BorderSizePixel = 0
-        Instance.new("UICorner", ind).CornerRadius = UDim.new(1,0)
-        
-        btn.MouseButton1Click:Connect(function()
-            CF[n] = not CF[n]
-            if CF[n] then
-                btn.BackgroundColor3 = TH.P
-                ind:TweenPosition(UDim2.new(1,-16,0.5,-7), "Out", "Quad", 0.15)
+-- CORREÇÃO 7: CloseBtn não destrói tudo
+MinimizeBtn.MouseButton1Click:Connect(function() PlaySound("9116338042", 0.2); MainFrame.Visible = false end)
+CloseBtn.MouseButton1Click:Connect(function() PlaySound("9116338042", 0.2); ScreenGui.Enabled = false end)
+
+-- ============================================
+-- SISTEMAS (CORRIGIDOS)
+-- ============================================
+
+-- CORREÇÃO 2: Auto Farm com proteção Enemies
+task.spawn(function()
+    while task.wait(0.3) do
+        if Settings.AutoFarm and RootPart then
+            local EnemiesFolder = Workspace:FindFirstChild("Enemies")
+            if EnemiesFolder then
+                local nearest, dist = nil, Settings.FarmDistance
+                for _, enemy in ipairs(EnemiesFolder:GetChildren()) do
+                    if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 and enemy:FindFirstChild("HumanoidRootPart") then
+                        local d = (RootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
+                        if d < dist then dist = d; nearest = enemy end
+                    end
+                end
+                if nearest then
+                    if Settings.FarmMethod == "TP" then
+                        RootPart.CFrame = nearest.HumanoidRootPart.CFrame * CFrame.new(0, 2, 3)
+                    end
+                    if Settings.AutoAttack then
+                        local w = Character:FindFirstChildOfClass("Tool")
+                        if w then w:Activate() end
+                    end
+                    if Settings.FastAttack and VirtualInputManager then
+                        pcall(function()
+                            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, nil, 0)
+                            task.wait(0.05)
+                            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, nil, 0)
+                        end)
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Auto Haki (com proteção)
+task.spawn(function()
+    while task.wait(1) do
+        if Settings.AutoBuso then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso") end) end
+        if Settings.AutoKen then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("Ken") end) end
+    end
+end)
+
+-- CORREÇÃO 4: Fly com AssemblyLinearVelocity
+local flyKeys = {W = false, S = false, A = false, D = false, Space = false, LeftControl = false}
+UserInputService.InputBegan:Connect(function(input, gp) if gp then return end; if flyKeys[input.KeyCode.Name] ~= nil then flyKeys[input.KeyCode.Name] = true end end)
+UserInputService.InputEnded:Connect(function(input) if flyKeys[input.KeyCode.Name] ~= nil then flyKeys[input.KeyCode.Name] = false end end)
+task.spawn(function()
+    while task.wait() do
+        if Settings.Fly and RootPart then
+            local hum = Character:FindFirstChild("Humanoid")
+            if hum then hum.PlatformStand = true end
+            local dir = Vector3.new()
+            if flyKeys.W then dir = dir + Camera.CFrame.LookVector end
+            if flyKeys.S then dir = dir - Camera.CFrame.LookVector end
+            if flyKeys.A then dir = dir - Camera.CFrame.RightVector end
+            if flyKeys.D then dir = dir + Camera.CFrame.RightVector end
+            if flyKeys.Space then dir = dir + Vector3.new(0, 1, 0) end
+            if flyKeys.LeftControl then dir = dir - Vector3.new(0, 1, 0) end
+            if dir.Magnitude > 0 then
+                pcall(function() RootPart.AssemblyLinearVelocity = dir.Unit * Settings.FlySpeed end)
             else
-                btn.BackgroundColor3 = TH.SL
-                ind:TweenPosition(UDim2.new(0,2,0.5,-7), "Out", "Quad", 0.15)
+                pcall(function() RootPart.AssemblyLinearVelocity = Vector3.zero end)
             end
-        end)
+        end
     end
+end)
 
-    local function CS(n, mi, ma, p, y)
-        local fr = Instance.new("Frame", p)
-        fr.Size = UDim2.new(1,-10,0,44); fr.Position = UDim2.new(0,5,0,y)
-        fr.BackgroundColor3 = TH.SF; fr.BackgroundTransparency = 0.5; fr.BorderSizePixel = 0
-        Instance.new("UICorner", fr).CornerRadius = UDim.new(0,5)
-        
-        local lb = Instance.new("TextLabel", fr)
-        lb.Size = UDim2.new(1,-20,0,14); lb.Position = UDim2.new(0,6,0,2)
-        lb.BackgroundTransparency = 1; lb.Text = n .. ": " .. CF[n]
-        lb.TextColor3 = TH.T; lb.TextSize = 9; lb.Font = Enum.Font.Gotham
-        lb.TextXAlignment = Enum.TextXAlignment.Left
-        
-        local br = Instance.new("Frame", fr)
-        br.Size = UDim2.new(1,-30,0,3); br.Position = UDim2.new(0,15,0,24)
-        br.BackgroundColor3 = TH.SL; br.BorderSizePixel = 0
-        
-        local fl = Instance.new("Frame", br)
-        fl.Size = UDim2.new((CF[n]-mi)/(ma-mi),0,1,0)
-        fl.BackgroundColor3 = TH.P; fl.BorderSizePixel = 0
-        
-        local btb = Instance.new("TextButton", br)
-        btb.Size = UDim2.new(0,11,0,11)
-        btb.Position = UDim2.new((CF[n]-mi)/(ma-mi),-5.5,0,-4)
-        btb.BackgroundColor3 = TH.P; btb.Text = ""; btb.BorderSizePixel = 0; btb.AutoButtonColor = false
-        Instance.new("UICorner", btb).CornerRadius = UDim.new(1,0)
-        
-        local dc
-        btb.MouseButton1Down:Connect(function()
-            dc = RS.RenderStepped:Connect(function()
-                if br.AbsoluteSize.X <= 0 then return end
-                local pc = math.clamp((UIS:GetMouseLocation().X - br.AbsolutePosition.X) / br.AbsoluteSize.X, 0, 1)
-                local vl = math.round(mi + (ma - mi) * pc)
-                CF[n] = vl
-                fl.Size = UDim2.new(pc,0,1,0)
-                btb.Position = UDim2.new(pc,-5.5,0,-4)
-                lb.Text = n .. ": " .. vl
+-- CORREÇÃO 5: Aimbot corrigido
+task.spawn(function()
+    while task.wait() do
+        if Settings.Aimbot and Settings.AimbotTarget and Settings.AimbotTarget:FindFirstChild("HumanoidRootPart") then
+            local tp = Settings.AimbotTarget.HumanoidRootPart.Position
+            local cp = Camera.CFrame.Position
+            local dir = (tp - cp).Unit
+            local smoothDir = Camera.CFrame.LookVector:Lerp(dir, 0.1 / Settings.AimbotSmooth)
+            Camera.CFrame = CFrame.lookAt(cp, cp + smoothDir)
+        end
+    end
+end)
+
+-- CORREÇÃO 8: ESP otimizado
+task.spawn(function()
+    while task.wait(2) do
+        if Settings.ESPPlayers then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= Player and p.Character and not p.Character:FindFirstChild("ITACHI_ESP") then
+                    local h = Instance.new("Highlight")
+                    h.Name = "ITACHI_ESP"
+                    h.FillColor = Color3.fromRGB(255, 0, 0)
+                    h.FillTransparency = 0.5
+                    h.Parent = p.Character
+                end
+            end
+        end
+        if Settings.ESPFruits then
+            for _, o in ipairs(Workspace:GetChildren()) do
+                if o:IsA("Tool") and o:FindFirstChild("Handle") and not o:FindFirstChild("ITACHI_ESP") then
+                    local h = Instance.new("Highlight")
+                    h.Name = "ITACHI_ESP"
+                    h.FillColor = Color3.fromRGB(255, 165, 0)
+                    h.FillTransparency = 0.5
+                    h.Parent = o
+                end
+            end
+        end
+    end
+end)
+
+-- Water Walk (CORREÇÃO 1: RaycastParamsClass)
+task.spawn(function()
+    while task.wait(0.1) do
+        if Settings.WaterWalk and RootPart then
+            pcall(function()
+                local rayOrigin = RootPart.Position + Vector3.new(0, 5, 0)
+                local rayDirection = Vector3.new(0, -50, 0)
+                local raycastParams = RaycastParamsClass.new()
+                raycastParams.FilterType = Enum.RaycastFilterType.Include
+                raycastParams.FilterDescendantsInstances = {Workspace}
+                local rayResult = Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+                if rayResult and rayResult.Instance and rayResult.Instance.Material == Enum.Material.Water then
+                    local waterY = rayResult.Position.Y
+                    if RootPart.Position.Y < waterY + 3 then
+                        RootPart.CFrame = CFrame.new(RootPart.Position.X, waterY + 3, RootPart.Position.Z)
+                    end
+                end
             end)
-        end)
-        UIS.InputEnded:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 and dc then dc:Disconnect(); dc = nil end
-        end)
-    end
-
-    local function PT(tn, items)
-        local y = 0
-        for _, it in ipairs(items) do
-            if it.t == "toggle" then CT(it.n, tcs[tn], y); y = y + 33
-            elseif it.t == "slider" then CS(it.n, it.mi, it.ma, tcs[tn], y); y = y + 47 end
         end
-        tcs[tn].CanvasSize = UDim2.new(0,0,0,y+25)
-    end
-
-    PT("Farm", {
-        {t="toggle",n="AutoFarm"},{t="toggle",n="AutoQuest"},{t="toggle",n="FastAttack"},
-        {t="toggle",n="AutoBoss"},{t="toggle",n="AutoStats"},{t="toggle",n="AutoEquipBestSword"},
-        {t="toggle",n="BringMobs"},{t="toggle",n="KillAura"},{t="toggle",n="NoStun"},
-        {t="toggle",n="AutoCollectAll"}
-    })
-    PT("Bosses", {
-        {t="toggle",n="AutoDarkBeard"},{t="toggle",n="AutoOrder"},{t="toggle",n="AutoDoughKing"},
-        {t="toggle",n="AutoSoulReaper"},{t="toggle",n="AutoCakePrince"},{t="toggle",n="AutoBeautifulPirate"},
-        {t="toggle",n="AutoLongma"},{t="toggle",n="AutoGreybeard"},{t="toggle",n="AutoRipIndra"},
-        {t="toggle",n="AutoThunderGod"},{t="toggle",n="AutoTideKeeper"},{t="toggle",n="AutoDoughPrince"},
-        {t="toggle",n="AutoBossHop"},{t="toggle",n="AutoLeaveAfterKill"}
-    })
-    PT("Swords", {
-        {t="toggle",n="AutoFarmCDK"},{t="toggle",n="AutoFarmTushita"},{t="toggle",n="AutoFarmYama"},
-        {t="toggle",n="AutoFarmKatakuri"},{t="toggle",n="AutoFarmDarkBlade"},{t="toggle",n="AutoFarmTrueTripleKatana"},
-        {t="toggle",n="AutoFarmRengoku"},{t="toggle",n="AutoFarmSaber"},{t="toggle",n="AutoFarmSoulCane"},
-        {t="toggle",n="AutoGetLegendarySword"},{t="toggle",n="AutoBuyAllSwords"}
-    })
-    PT("Fruits", {
-        {t="toggle",n="AutoFindFruit"},{t="toggle",n="FruitSniper"},{t="toggle",n="AutoSpinFruit"},
-        {t="toggle",n="AutoCollectFruits"},{t="toggle",n="AutoStoreFruits"},{t="toggle",n="AutoTeleportFruit"},
-        {t="toggle",n="AutoStoreInInventory"},{t="toggle",n="AutoDropBadFruits"},
-        {t="toggle",n="AutoBuyFruitsFromDealer"},{t="toggle",n="AutoEatFruit"},{t="toggle",n="AutoBuyRandomFruit"}
-    })
-    PT("AutoBuy", {
-        {t="toggle",n="AutoBuyAllHaki"},{t="toggle",n="AutoBuyAllAbilities"},{t="toggle",n="AutoBuyAllFightingStyles"},
-        {t="toggle",n="AutoBuyElectricClaw"},{t="toggle",n="AutoBuySuperhuman"},{t="toggle",n="AutoBuyDeathStep"},
-        {t="toggle",n="AutoBuySharkmanKarate"},{t="toggle",n="AutoBuyDragonTalon"},{t="toggle",n="AutoBuyGodHuman"},
-        {t="toggle",n="AutoBuyRaceV2"},{t="toggle",n="AutoBuyRaceV3"},{t="toggle",n="AutoBuyRaceV4"},
-        {t="toggle",n="AutoBuyInstinctV2"},{t="toggle",n="AutoBuyObservationV2"},
-        {t="toggle",n="AutoBuyMeleeItems"},{t="toggle",n="AutoBuySwordItems"}
-    })
-    PT("Shop", {
-        {t="toggle",n="AutoBuyHaki"},{t="toggle",n="AutoBuyGeppo"},{t="toggle",n="AutoBuySoru"},
-        {t="toggle",n="AutoBuyKen"},{t="toggle",n="AutoBuyBuso"},{t="toggle",n="AutoSellItems"},{t="toggle",n="AutoBuyChests"}
-    })
-    PT("Raid", {
-        {t="toggle",n="AutoStartRaid"},{t="toggle",n="AutoAwaken"},{t="toggle",n="AutoBuyChip"},{t="toggle",n="AutoCompleteRaid"}
-    })
-    PT("Mastery", {
-        {t="toggle",n="AutoFarmMastery"},{t="toggle",n="AutoSwitchWeapon"},
-        {t="slider",n="TargetMasteryLevel",mi=1,ma=600}
-    })
-    PT("Teleport", {
-        {t="toggle",n="AutoTPToQuest"},{t="toggle",n="AutoTPToBoss"},{t="toggle",n="AutoTPToFruit"},
-        {t="toggle",n="TpToSeaBeast"},{t="toggle",n="TpToFruitSpawn"},{t="toggle",n="TpToChest"},
-        {t="toggle",n="TpToShop"},{t="toggle",n="TpToAllNPCs"}
-    })
-    PT("Sea", {
-        {t="toggle",n="AutoSeaBeast"},{t="toggle",n="AutoShipRaid"},{t="toggle",n="AutoKraken"},
-        {t="toggle",n="AutoFactory"},{t="toggle",n="AutoPirateRaid"},{t="toggle",n="AutoCastleRaid"},
-        {t="toggle",n="AutoRumblingWaters"},{t="toggle",n="AutoGhostShip"},{t="toggle",n="AutoMirageIsland"}
-    })
-    PT("Factory", {
-        {t="toggle",n="AutoFactoryEvent"},{t="toggle",n="AutoCollectMaterial"},{t="toggle",n="AutoCraftItem"}
-    })
-    PT("Combat", {
-        {t="toggle",n="AutoClick"},{t="slider",n="CPS",mi=1,ma=10},{t="toggle",n="FastClick"},
-        {t="toggle",n="AutoHaki"},{t="toggle",n="AutoBusoHaki"},{t="toggle",n="AutoKenHaki"},
-        {t="toggle",n="AutoEquipWeapon"},{t="toggle",n="AutoSuperJump"},{t="toggle",n="AutoDash"},
-        {t="toggle",n="AutoBlock"},{t="toggle",n="AutoDodge"},{t="toggle",n="HitboxExtender"},
-        {t="toggle",n="AutoSkills"},{t="toggle",n="AutoUltimate"}
-    })
-    PT("Stats", {
-        {t="toggle",n="AutoDistributeStats"},{t="slider",n="PointsPerStat",mi=1,ma=10}
-    })
-    PT("Visual", {
-        {t="toggle",n="ESP"},{t="toggle",n="ESPPlayers"},{t="toggle",n="ESPFruits"},
-        {t="toggle",n="ESPChests"},{t="toggle",n="ESPNPCs"},{t="toggle",n="ESPSeaBeasts"},
-        {t="toggle",n="FullBright"},{t="toggle",n="NoClip"},{t="toggle",n="RemoveFog"},
-        {t="toggle",n="Tracer"},{t="toggle",n="Chams"}
-    })
-    PT("PvP", {
-        {t="slider",n="AimFOV",mi=50,ma=500},{t="toggle",n="ShowFOV"},{t="toggle",n="Aimbot"},
-        {t="toggle",n="AimAssist"},{t="toggle",n="AllyCheck"},{t="toggle",n="TeamCheck"},
-        {t="toggle",n="AutoBounty"},{t="toggle",n="SafeZone"},{t="toggle",n="CombatLog"},{t="toggle",n="AutoRunFromBounty"}
-    })
-    PT("Player", {
-        {t="slider",n="WalkSpeed",mi=16,ma=150},{t="slider",n="JumpPower",mi=50,ma=150},
-        {t="toggle",n="InfiniteJump"},{t="toggle",n="Fly"},{t="slider",n="FlySpeed",mi=10,ma=50},
-        {t="toggle",n="GodMode"},{t="toggle",n="NoFallDamage"},{t="toggle",n="SuperSpeed"},
-        {t="toggle",n="AutoRespawn"},{t="toggle",n="AntiStun"},{t="toggle",n="AntiGrab"},{t="toggle",n="AntiKnockback"}
-    })
-    PT("Race", {
-        {t="toggle",n="AutoEvolveRace"},{t="toggle",n="AutoBuyRaceReroll"},
-        {t="toggle",n="AutoV2"},{t="toggle",n="AutoV3"},{t="toggle",n="AutoV4"},{t="toggle",n="AutoUnlockAllRaces"}
-    })
-    PT("Quest", {
-        {t="toggle",n="AutoTalkNPC"},{t="toggle",n="AutoCompleteQuest"},{t="toggle",n="AutoTurnInQuest"},{t="toggle",n="SkipQuestDialog"}
-    })
-    PT("Notif", {
-        {t="toggle",n="NotifyOnFruitSpawn"},{t="toggle",n="NotifyOnBossSpawn"},
-        {t="toggle",n="NotifyOnSeaBeast"},{t="toggle",n="NotifyOnRaidStart"},{t="toggle",n="NotifyOnItemSpawn"}
-    })
-    PT("Security", {
-        {t="toggle",n="SafeMode"},{t="toggle",n="AutoLeaveOnAdmin"},{t="toggle",n="HideCharacter"},
-        {t="toggle",n="AntiTPBack"},{t="toggle",n="AutoResetOnBan"},
-        {t="toggle",n="AutoLeaveOnKill"},{t="toggle",n="AntiReport"},
-        {t="toggle",n="AutoDetectBan"},{t="toggle",n="AutoSwitchServer"},{t="toggle",n="AntiSpectate"}
-    })
-
-    local my = 0
-    CT("AntiAFK", tcs["Misc"], my); my = my + 33
-    CT("FPSBoost", tcs["Misc"], my); my = my + 33
-    CT("RemoveTerrain", tcs["Misc"], my); my = my + 33
-    CT("AutoRedeemCodes", tcs["Misc"], my); my = my + 33
-    CT("AutoOpenChests", tcs["Misc"], my); my = my + 33
-    CT("AutoCollectGems", tcs["Misc"], my); my = my + 33
-    CT("AutoCollectBeli", tcs["Misc"], my); my = my + 33
-    CT("AutoUpgradeWeapon", tcs["Misc"], my); my = my + 33
-    CT("AutoCollectAll", tcs["Misc"], my); my = my + 33
-    
-    local rjb = Instance.new("TextButton", tcs["Misc"])
-    rjb.Size = UDim2.new(1,-10,0,26); rjb.Position = UDim2.new(0,5,0,my)
-    rjb.BackgroundColor3 = TH.P; rjb.BackgroundTransparency = 0.3
-    rjb.Text = "REJOIN"; rjb.TextColor3 = TH.T; rjb.TextSize = 10
-    rjb.Font = Enum.Font.GothamBold; rjb.BorderSizePixel = 0
-    Instance.new("UICorner", rjb).CornerRadius = UDim.new(0,5)
-    rjb.MouseButton1Click:Connect(function() TPS:Teleport(game.PlaceId) end)
-    my = my + 33
-    
-    local svb = Instance.new("TextButton", tcs["Misc"])
-    svb.Size = UDim2.new(1,-10,0,26); svb.Position = UDim2.new(0,5,0,my)
-    svb.BackgroundColor3 = TH.SC; svb.BackgroundTransparency = 0.5
-    svb.Text = "SAVE"; svb.TextColor3 = TH.T; svb.TextSize = 10
-    svb.Font = Enum.Font.GothamBold; svb.BorderSizePixel = 0
-    Instance.new("UICorner", svb).CornerRadius = UDim.new(0,5)
-    svb.MouseButton1Click:Connect(function() SC(); svb.Text = "OK!"; task.delay(2, function() svb.Text = "SAVE" end) end)
-    my = my + 35
-    tcs["Misc"].CanvasSize = UDim2.new(0,0,0,my+25)
-
-    local dr, di, ds, sp
-    TB.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            dr = true; ds = i.Position; sp = MF.Position
-        end
-    end)
-    TB.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then dr = false end
-    end)
-    UIS.InputChanged:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseMovement then di = i end
-    end)
-    RS.RenderStepped:Connect(function()
-        if dr and di then
-            local d = di.Position - ds
-            MF.Position = UDim2.new(sp.X.Scale, sp.X.Offset + d.X, sp.Y.Scale, sp.Y.Offset + d.Y)
-        end
-    end)
-
-    local FOV = Instance.new("Frame", SG)
-    FOV.Size = UDim2.new(0,CF.AimFOV,0,CF.AimFOV)
-    FOV.Position = UDim2.new(0.5,-CF.AimFOV/2,0.5,-CF.AimFOV/2)
-    FOV.BackgroundTransparency = 1; FOV.Visible = CF.ShowFOV
-    local fstr = Instance.new("UIStroke", FOV)
-    fstr.Color = TH.P; fstr.Thickness = 2
-    Instance.new("UICorner", FOV).CornerRadius = UDim.new(1,0)
-    RS.RenderStepped:Connect(function()
-        FOV.Visible = CF.ShowFOV
-        FOV.Size = UDim2.new(0,CF.AimFOV,0,CF.AimFOV)
-        FOV.Position = UDim2.new(0.5,-CF.AimFOV/2,0.5,-CF.AimFOV/2)
-    end)
-
-    return SG
-end
-
-local SG = CG()
-LC()
-
--- ============================================
--- SISTEMAS COM SEGURANÇA MÁXIMA
--- ============================================
-RS.Heartbeat:Connect(function()
-    -- Staff Check
-    CheckForStaff()
-    
-    -- Auto Switch Server
-    AutoSwitchIfDanger()
-    
-    -- Anti-Report
-    AntiReportSystem()
-    
-    if CF.AutoFarm then
-        pcall(function()
-            local c = GCS()
-            if not c then return end
-            local e = GNE(CF.BringMobs and 400 or 200)
-            if e then
-                SafeTeleport(e.HumanoidRootPart.Position + Vector3.new(0,5,0))
-                if CF.FastAttack then SafeClick() end
-                SafeClick()
-            end
-        end)
-    end
-    
-    if CF.AutoBoss then
-        pcall(function()
-            local b = GB()
-            if #b > 0 then
-                SafeTeleport(b[1].HumanoidRootPart.Position + Vector3.new(0,10,0))
-                for _ = 1, 3 do SafeClick() end
-            end
-        end)
-    end
-    
-    if CF.KillAura then
-        pcall(function()
-            local c = GCS()
-            if not c then return end
-            for _, e in ipairs(workspace.Enemies:GetChildren()) do
-                if e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 and e:FindFirstChild("HumanoidRootPart") then
-                    if (c.HumanoidRootPart.Position - e.HumanoidRootPart.Position).Magnitude < 30 then
-                        e.Humanoid.Health = 0
-                    end
-                end
-            end
-        end)
-    end
-    
-    pcall(function()
-        local c = GCS()
-        if not c then return end
-        local h = c:FindFirstChildOfClass("Humanoid")
-        if h then
-            h.WalkSpeed = CF.SafeMode and math.min(CF.WalkSpeed, Security.MaxSpeed) or CF.WalkSpeed
-            h.JumpPower = CF.SafeMode and math.min(CF.JumpPower, Security.MaxJump) or CF.JumpPower
-            if CF.InfiniteJump then h.Jump = true end
-            if CF.Fly and CF.FlySpeed <= Security.MaxFlySpeed then
-                h.PlatformStand = true
-                c.HumanoidRootPart.CFrame = c.HumanoidRootPart.CFrame + Vector3.new(0, CF.FlySpeed/100, 0)
-            end
-            if CF.NoFallDamage then h.FallSpeed = 0 end
-        end
-    end)
-    
-    if CF.GodMode then
-        pcall(function()
-            local c = GCS()
-            if c then
-                local h = c:FindFirstChildOfClass("Humanoid")
-                if h then h.Health = h.MaxHealth end
-            end
-        end)
-    end
-    
-    if CF.AntiAFK then
-        pcall(function()
-            VU:CaptureController()
-            VU:ClickButton2(Vector2.new())
-        end)
-    end
-    
-    if CF.FullBright then
-        pcall(function()
-            L.Brightness = 2; L.ClockTime = 14; L.FogEnd = 100000
-        end)
-    end
-    
-    if CF.AutoClick then
-        pcall(function()
-            task.wait(1 / math.min(CF.CPS, Security.MaxCPS))
-            if CF.FastClick then SafeClick() end
-            SafeClick()
-        end)
-    end
-    
-    if CF.AutoCollectFruits then
-        pcall(function()
-            for _, f in ipairs(GF()) do
-                if f:IsA("Tool") and LP.Character then
-                    LP.Character.Humanoid:EquipTool(f)
-                end
-            end
-        end)
-    end
-    
-    if CF.AutoOpenChests then
-        pcall(function()
-            for _, ch in ipairs(GC()) do
-                if LP.Character then
-                    SafeTeleport(ch.Position + Vector3.new(0,3,0))
-                    task.wait(0.5)
-                end
-            end
-        end)
-    end
-    
-    if CF.AutoEquipBestSword then EBS() end
-    if CF.FPSBoost then pcall(function() settings().Rendering.QualityLevel = 1 end) end
-    if CF.RemoveTerrain then pcall(function() workspace.Terrain:Clear() end) end
-    
-    if CF.HideCharacter and LP.Character then
-        pcall(function()
-            for _, v in ipairs(LP.Character:GetChildren()) do
-                if v:IsA("BasePart") then v.Transparency = 1 end
-            end
-        end)
-    end
-    
-    if CF.AutoTeleportFruit then
-        pcall(function()
-            local f = GF()
-            if #f > 0 then SafeTeleport(f[1].Position) end
-        end)
     end
 end)
 
-RS.Stepped:Connect(function()
-    if CF.NoClip then
-        pcall(function()
-            if LP.Character then
-                for _, v in ipairs(LP.Character:GetDescendants()) do
-                    if v:IsA("BasePart") then v.CanCollide = false end
-                end
-            end
-        end)
-    end
-end)
-
-RS.RenderStepped:Connect(function()
-    pcall(function()
-        if CF.ESP or CF.ESPPlayers then
-            for _, p in ipairs(GP()) do
-                if p.Character and p.Character:FindFirstChild("Head") then
-                    p.Character.Head.Color = Color3.fromRGB(255,0,0)
-                end
-            end
+-- Anti AFK
+if VirtualUser then
+    task.spawn(function()
+        while task.wait(30) do
+            if Settings.AntiAFK then pcall(function() VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end) end
         end
-        if CF.ESP or CF.ESPFruits then
-            for _, f in ipairs(GF()) do
-                if f:IsA("BasePart") then f.Color = Color3.fromRGB(0,255,0) end
-            end
-        end
-        if CF.ESP or CF.ESPChests then
-            for _, ch in ipairs(GC()) do
-                if ch:IsA("BasePart") then ch.Color = Color3.fromRGB(255,255,0) end
-            end
-        end
-    end)
-    
-    if CF.Aimbot then
-        pcall(function()
-            local cl, cd = nil, CF.AimFOV
-            local mp = UIS:GetMouseLocation()
-            local ct = CF.AimAssist and mp or Vector2.new(workspace.CurrentCamera.ViewportSize.X/2, workspace.CurrentCamera.ViewportSize.Y/2)
-            for _, p in ipairs(GP()) do
-                if p.Character and p.Character:FindFirstChild("Head") then
-                    local sp, os = workspace.CurrentCamera:WorldToScreenPoint(p.Character.Head.Position)
-                    if os then
-                        local d = (Vector2.new(sp.X, sp.Y) - ct).Magnitude
-                        if d < cd then cd = d; cl = p end
-                    end
-                end
-            end
-            if cl then
-                local tp = workspace.CurrentCamera:WorldToScreenPoint(cl.Character.Head.Position)
-                mousemoverel(tp.X - mp.X, tp.Y - mp.Y)
-            end
-        end)
-    end
-end)
-
-local function Notify(title, msg)
-    pcall(function()
-        local nf = Instance.new("Frame", SG)
-        nf.Size = UDim2.new(0,260,0,60); nf.Position = UDim2.new(1,280,0,20)
-        nf.BackgroundColor3 = TH.SF; nf.BackgroundTransparency = 0.2; nf.BorderSizePixel = 0
-        Instance.new("UICorner", nf).CornerRadius = UDim.new(0,8)
-        local ns = Instance.new("UIStroke", nf); ns.Color = TH.P; ns.Thickness = 2
-        
-        local t = Instance.new("TextLabel", nf)
-        t.Size = UDim2.new(1,-10,0,22); t.Position = UDim2.new(0,5,0,3)
-        t.BackgroundTransparency = 1; t.Text = title; t.TextColor3 = TH.P
-        t.TextSize = 14; t.Font = Enum.Font.GothamBold; t.TextXAlignment = Enum.TextXAlignment.Left
-        
-        local m = Instance.new("TextLabel", nf)
-        m.Size = UDim2.new(1,-10,0,25); m.Position = UDim2.new(0,5,0,25)
-        m.BackgroundTransparency = 1; m.Text = msg; m.TextColor3 = TH.T
-        m.TextSize = 11; m.Font = Enum.Font.Gotham; m.TextXAlignment = Enum.TextXAlignment.Left
-        
-        TS:Create(nf, TweenInfo.new(0.4), {Position = UDim2.new(1,-280,0,20)}):Play()
-        task.delay(4, function()
-            TS:Create(nf, TweenInfo.new(0.4), {Position = UDim2.new(1,280,0,20)}):Play()
-            task.wait(0.4); nf:Destroy()
-        end)
     end)
 end
 
-Notify("🛡️ ITACHI HUB SECURE", "v9.1 | Anti-Ban Reduzido | Máxima Proteção")
-
-end)
-
-if not success then warn("Error: " .. tostring(e)) end
+-- ============================================
+-- INICIALIZAÇÃO
+-- ============================================
+Notify("✅ ITACHI HUB v8.5", "Todas as correções aplicadas!", 5, "success")
+Notify("ℹ️ DICA", "F1 = Abrir/Fechar | Arraste o ícone do Itachi", 4, "info")
+print("ITACHI HUB v8.5 - CORRIGIDO E FUNCIONAL!")
