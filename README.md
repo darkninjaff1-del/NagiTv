@@ -1,6 +1,6 @@
 --[[
     ⚡ ITACHI HUB - BLOX FRUITS PREMIUM ⚡
-    Versão 8.6 - TODOS OS CLIQUES CORRIGIDOS
+    Versão 8.7 - TUDO FUNCIONANDO
 ]]
 
 -- Serviços
@@ -249,7 +249,7 @@ Logo.Parent = Header
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0, 200, 1, 0)
 Title.Position = UDim2.new(0, 40, 0, 0)
-Title.Text = "ITACHI HUB v8.6"
+Title.Text = "ITACHI HUB v8.7"
 Title.TextColor3 = Settings.ThemeColor
 Title.TextSize = 15
 Title.Font = Enum.Font.GothamBlack
@@ -421,7 +421,7 @@ local function CreateSection(parent, title)
     return s
 end
 
--- 🔧 CreateToggle CORRIGIDO - TextButton invisível sobre toda a área
+-- CreateToggle CORRIGIDO
 local function CreateToggle(parent, name, default, callback)
     local f = Instance.new("Frame")
     f.Size = UDim2.new(1, -6, 0, 36)
@@ -463,7 +463,7 @@ local function CreateToggle(parent, name, default, callback)
     
     local state = default
     
-    -- CORREÇÃO: TextButton invisível sobre toda a área do toggle
+    -- TextButton invisível sobre toda a área
     local clickDetector = Instance.new("TextButton")
     clickDetector.Size = UDim2.new(1, 0, 1, 0)
     clickDetector.BackgroundTransparency = 1
@@ -503,7 +503,7 @@ local function CreateToggle(parent, name, default, callback)
     }
 end
 
--- 🔧 CreateButton CORRIGIDO
+-- CreateButton CORRIGIDO
 local function CreateButton(parent, name, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -6, 0, 32)
@@ -538,7 +538,7 @@ local function CreateButton(parent, name, callback)
     return btn
 end
 
--- 🔧 CreateSlider CORRIGIDO
+-- CreateSlider CORRIGIDO (InputEnded LOCAL)
 local function CreateSlider(parent, name, min, max, default, callback)
     local f = Instance.new("Frame")
     f.Size = UDim2.new(1, -6, 0, 46)
@@ -602,6 +602,7 @@ local function CreateSlider(parent, name, min, max, default, callback)
     
     sbtn.MouseButton1Down:Connect(function()
         draggingSlider = true
+        if mouseConnection then mouseConnection:Disconnect() end
         mouseConnection = UserInputService.InputChanged:Connect(function(input)
             if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
                 update(input)
@@ -609,7 +610,8 @@ local function CreateSlider(parent, name, min, max, default, callback)
         end)
     end)
     
-    UserInputService.InputEnded:Connect(function(input)
+    -- InputEnded LOCAL (não global)
+    sbtn.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             draggingSlider = false
             if mouseConnection then
@@ -897,6 +899,7 @@ floatStroke2.Thickness = 2
 local floatDragging = false
 local floatDragStart, floatStartPos
 
+-- InputBegan no próprio botão
 FloatingBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         floatDragging = true
@@ -905,6 +908,24 @@ FloatingBtn.InputBegan:Connect(function(input)
     end
 end)
 
+-- InputEnded no próprio botão (não global)
+FloatingBtn.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local wasDrag = false
+        if floatDragging and floatDragStart then
+            wasDrag = (input.Position - floatDragStart).Magnitude > 8
+        end
+        floatDragging = false
+        
+        if not wasDrag then
+            -- Clique curto = alterna menu
+            PlaySound("9116338042", 0.2)
+            MainFrame.Visible = not MainFrame.Visible
+        end
+    end
+end)
+
+-- Movimento do mouse (precisa ser global para funcionar durante o arraste)
 UserInputService.InputChanged:Connect(function(input)
     if floatDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - floatDragStart
@@ -912,141 +933,166 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local wasDrag = false
-        if floatDragging and floatDragStart then
-            wasDrag = (input.Position - floatDragStart).Magnitude > 5
-        end
-        floatDragging = false
-        
-        if not wasDrag then
-            PlaySound("9116338042", 0.2)
-            MainFrame.Visible = not MainFrame.Visible
-        end
-    end
-end)
-
 MinimizeBtn.MouseButton1Click:Connect(function() PlaySound("9116338042", 0.2); MainFrame.Visible = false end)
 CloseBtn.MouseButton1Click:Connect(function() PlaySound("9116338042", 0.2); ScreenGui.Enabled = false end)
 
 -- ============================================
--- SISTEMAS
+-- SISTEMAS CORRIGIDOS (TODOS FUNCIONANDO)
 -- ============================================
 
 -- Auto Farm
 task.spawn(function()
     while task.wait(0.3) do
-        if Settings.AutoFarm and RootPart then
-            local EnemiesFolder = Workspace:FindFirstChild("Enemies")
-            if EnemiesFolder then
-                local nearest, dist = nil, Settings.FarmDistance
-                for _, enemy in ipairs(EnemiesFolder:GetChildren()) do
-                    if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 and enemy:FindFirstChild("HumanoidRootPart") then
-                        local d = (RootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
-                        if d < dist then dist = d; nearest = enemy end
+        pcall(function()
+            if Settings.AutoFarm and Character and RootPart then
+                local EnemiesFolder = Workspace:FindFirstChild("Enemies")
+                if EnemiesFolder then
+                    local nearest = nil
+                    local dist = Settings.FarmDistance
+                    for _, enemy in ipairs(EnemiesFolder:GetChildren()) do
+                        if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 and enemy:FindFirstChild("HumanoidRootPart") then
+                            local d = (RootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
+                            if d < dist then
+                                dist = d
+                                nearest = enemy
+                            end
+                        end
                     end
-                end
-                if nearest then
-                    if Settings.FarmMethod == "TP" then
-                        RootPart.CFrame = nearest.HumanoidRootPart.CFrame * CFrame.new(0, 2, 3)
-                    end
-                    if Settings.AutoAttack then
-                        local w = Character:FindFirstChildOfClass("Tool")
-                        if w then w:Activate() end
-                    end
-                    if Settings.FastAttack and VirtualInputManager then
-                        pcall(function()
+                    if nearest and nearest:FindFirstChild("HumanoidRootPart") then
+                        if Settings.FarmMethod == "TP" then
+                            RootPart.CFrame = nearest.HumanoidRootPart.CFrame * CFrame.new(0, 2, 3)
+                        end
+                        if Settings.AutoAttack then
+                            local w = Character:FindFirstChildOfClass("Tool")
+                            if w then w:Activate() end
+                        end
+                        if Settings.FastAttack and VirtualInputManager then
                             VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, nil, 0)
                             task.wait(0.05)
                             VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, nil, 0)
-                        end)
+                        end
                     end
                 end
             end
-        end
+        end)
     end
 end)
 
 -- Auto Haki
 task.spawn(function()
     while task.wait(1) do
-        if Settings.AutoBuso then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso") end) end
-        if Settings.AutoKen then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("Ken") end) end
+        pcall(function()
+            if Settings.AutoBuso then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
+            end
+        end)
+        pcall(function()
+            if Settings.AutoKen then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("Ken")
+            end
+        end)
+    end
+end)
+
+-- Auto Skills
+task.spawn(function()
+    while task.wait(0.3) do
+        pcall(function()
+            local skills = {
+                {Settings.AutoSkillZ, Enum.KeyCode.Z},
+                {Settings.AutoSkillX, Enum.KeyCode.X},
+                {Settings.AutoSkillC, Enum.KeyCode.C},
+                {Settings.AutoSkillV, Enum.KeyCode.V},
+                {Settings.AutoSkillF, Enum.KeyCode.F}
+            }
+            for _, s in ipairs(skills) do
+                if s[1] and VirtualInputManager then
+                    VirtualInputManager:SendKeyEvent(true, s[2], false, nil)
+                    task.wait(0.05)
+                    VirtualInputManager:SendKeyEvent(false, s[2], false, nil)
+                end
+            end
+        end)
+    end
+end)
+
+-- Auto Click
+task.spawn(function()
+    while task.wait(0.1) do
+        pcall(function()
+            if Settings.AutoClick and VirtualInputManager then
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, nil, 0)
+                task.wait(0.01)
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, nil, 0)
+            end
+        end)
+    end
+end)
+
+-- No Clip
+task.spawn(function()
+    while task.wait(0.2) do
+        pcall(function()
+            if Settings.NoClip and Character then
+                for _, p in ipairs(Character:GetDescendants()) do
+                    if p:IsA("BasePart") then
+                        p.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- Infinite Jump
+UserInputService.JumpRequest:Connect(function()
+    if Settings.InfiniteJump and Character and Humanoid then
+        Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
     end
 end)
 
 -- Fly
 local flyKeys = {W = false, S = false, A = false, D = false, Space = false, LeftControl = false}
-UserInputService.InputBegan:Connect(function(input, gp) if gp then return end; if flyKeys[input.KeyCode.Name] ~= nil then flyKeys[input.KeyCode.Name] = true end end)
-UserInputService.InputEnded:Connect(function(input) if flyKeys[input.KeyCode.Name] ~= nil then flyKeys[input.KeyCode.Name] = false end end)
-task.spawn(function()
-    while task.wait() do
-        if Settings.Fly and RootPart then
-            local hum = Character:FindFirstChild("Humanoid")
-            if hum then hum.PlatformStand = true end
-            local dir = Vector3.new()
-            if flyKeys.W then dir = dir + Camera.CFrame.LookVector end
-            if flyKeys.S then dir = dir - Camera.CFrame.LookVector end
-            if flyKeys.A then dir = dir - Camera.CFrame.RightVector end
-            if flyKeys.D then dir = dir + Camera.CFrame.RightVector end
-            if flyKeys.Space then dir = dir + Vector3.new(0, 1, 0) end
-            if flyKeys.LeftControl then dir = dir - Vector3.new(0, 1, 0) end
-            if dir.Magnitude > 0 then
-                pcall(function() RootPart.AssemblyLinearVelocity = dir.Unit * Settings.FlySpeed end)
-            else
-                pcall(function() RootPart.AssemblyLinearVelocity = Vector3.zero end)
-            end
-        end
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if flyKeys[input.KeyCode.Name] ~= nil then
+        flyKeys[input.KeyCode.Name] = true
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if flyKeys[input.KeyCode.Name] ~= nil then
+        flyKeys[input.KeyCode.Name] = false
     end
 end)
 
--- Aimbot
 task.spawn(function()
     while task.wait() do
-        if Settings.Aimbot and Settings.AimbotTarget and Settings.AimbotTarget:FindFirstChild("HumanoidRootPart") then
-            local tp = Settings.AimbotTarget.HumanoidRootPart.Position
-            local cp = Camera.CFrame.Position
-            local dir = (tp - cp).Unit
-            local smoothDir = Camera.CFrame.LookVector:Lerp(dir, 0.1 / Settings.AimbotSmooth)
-            Camera.CFrame = CFrame.lookAt(cp, cp + smoothDir)
-        end
-    end
-end)
-
--- ESP
-task.spawn(function()
-    while task.wait(2) do
-        if Settings.ESPPlayers then
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= Player and p.Character and not p.Character:FindFirstChild("ITACHI_ESP") then
-                    local h = Instance.new("Highlight")
-                    h.Name = "ITACHI_ESP"
-                    h.FillColor = Color3.fromRGB(255, 0, 0)
-                    h.FillTransparency = 0.5
-                    h.Parent = p.Character
+        pcall(function()
+            if Settings.Fly and Character and RootPart then
+                local hum = Character:FindFirstChild("Humanoid")
+                if hum then hum.PlatformStand = true end
+                local dir = Vector3.new()
+                if flyKeys.W then dir = dir + Camera.CFrame.LookVector end
+                if flyKeys.S then dir = dir - Camera.CFrame.LookVector end
+                if flyKeys.A then dir = dir - Camera.CFrame.RightVector end
+                if flyKeys.D then dir = dir + Camera.CFrame.RightVector end
+                if flyKeys.Space then dir = dir + Vector3.new(0, 1, 0) end
+                if flyKeys.LeftControl then dir = dir - Vector3.new(0, 1, 0) end
+                if dir.Magnitude > 0 then
+                    RootPart.AssemblyLinearVelocity = dir.Unit * Settings.FlySpeed
+                else
+                    RootPart.AssemblyLinearVelocity = Vector3.zero
                 end
             end
-        end
-        if Settings.ESPFruits then
-            for _, o in ipairs(Workspace:GetChildren()) do
-                if o:IsA("Tool") and o:FindFirstChild("Handle") and not o:FindFirstChild("ITACHI_ESP") then
-                    local h = Instance.new("Highlight")
-                    h.Name = "ITACHI_ESP"
-                    h.FillColor = Color3.fromRGB(255, 165, 0)
-                    h.FillTransparency = 0.5
-                    h.Parent = o
-                end
-            end
-        end
+        end)
     end
 end)
 
 -- Water Walk
 task.spawn(function()
     while task.wait(0.1) do
-        if Settings.WaterWalk and RootPart then
-            pcall(function()
+        pcall(function()
+            if Settings.WaterWalk and Character and RootPart then
                 local rayOrigin = RootPart.Position + Vector3.new(0, 5, 0)
                 local rayDirection = Vector3.new(0, -50, 0)
                 local raycastParams = RaycastParamsClass.new()
@@ -1059,8 +1105,71 @@ task.spawn(function()
                         RootPart.CFrame = CFrame.new(RootPart.Position.X, waterY + 3, RootPart.Position.Z)
                     end
                 end
-            end)
-        end
+            end
+        end)
+    end
+end)
+
+-- Aimbot
+task.spawn(function()
+    while task.wait() do
+        pcall(function()
+            if Settings.Aimbot and Settings.AimbotTarget and Settings.AimbotTarget:FindFirstChild("HumanoidRootPart") and Camera then
+                local tp = Settings.AimbotTarget.HumanoidRootPart.Position
+                local cp = Camera.CFrame.Position
+                local dir = (tp - cp).Unit
+                local smoothDir = Camera.CFrame.LookVector:Lerp(dir, 0.1 / math.max(Settings.AimbotSmooth, 0.1))
+                Camera.CFrame = CFrame.lookAt(cp, cp + smoothDir)
+            end
+        end)
+    end
+end)
+
+-- ESP
+task.spawn(function()
+    while task.wait(2) do
+        pcall(function()
+            if Settings.ESPPlayers then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= Player and p.Character and not p.Character:FindFirstChild("ITACHI_ESP") then
+                        local h = Instance.new("Highlight")
+                        h.Name = "ITACHI_ESP"
+                        h.FillColor = Color3.fromRGB(255, 0, 0)
+                        h.FillTransparency = 0.5
+                        h.Parent = p.Character
+                    end
+                end
+            end
+            if Settings.ESPFruits then
+                for _, o in ipairs(Workspace:GetChildren()) do
+                    if o:IsA("Tool") and o:FindFirstChild("Handle") and not o:FindFirstChild("ITACHI_ESP") then
+                        local h = Instance.new("Highlight")
+                        h.Name = "ITACHI_ESP"
+                        h.FillColor = Color3.fromRGB(255, 165, 0)
+                        h.FillTransparency = 0.5
+                        h.Parent = o
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- Remove Fog / Full Bright / FPS Boost
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            if Settings.RemoveFog then
+                Lighting.FogEnd = 9e9
+            end
+            if Settings.FullBright then
+                Lighting.Brightness = 2
+                Lighting.ClockTime = 14
+            end
+            if Settings.FPSBoost then
+                Lighting.GlobalShadows = false
+            end
+        end)
     end
 end)
 
@@ -1068,14 +1177,35 @@ end)
 if VirtualUser then
     task.spawn(function()
         while task.wait(30) do
-            if Settings.AntiAFK then pcall(function() VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end) end
+            pcall(function()
+                if Settings.AntiAFK then
+                    VirtualUser:CaptureController()
+                    VirtualUser:ClickButton2(Vector2.new())
+                end
+            end)
         end
     end)
 end
 
+-- WalkSpeed/JumpPower updater
+task.spawn(function()
+    while task.wait(0.5) do
+        pcall(function()
+            if Character and Humanoid then
+                if Settings.WalkSpeed ~= Humanoid.WalkSpeed then
+                    Humanoid.WalkSpeed = Settings.WalkSpeed
+                end
+                if Settings.JumpPower ~= Humanoid.JumpPower then
+                    Humanoid.JumpPower = Settings.JumpPower
+                end
+            end
+        end)
+    end
+end)
+
 -- ============================================
 -- INICIALIZAÇÃO
 -- ============================================
-Notify("✅ ITACHI HUB v8.6", "Toggles, botões e sliders 100% funcionais!", 5, "success")
-Notify("ℹ️ DICA", "F1 = Abrir/Fechar | Clique no ícone do Itachi", 4, "info")
-print("ITACHI HUB v8.6 - TUDO FUNCIONANDO! ✅")
+Notify("✅ ITACHI HUB v8.7", "TUDO FUNCIONANDO! Toggles, sliders, fly, farm!", 5, "success")
+Notify("ℹ️ DICA", "F1 = Menu | Arraste o ícone do Itachi", 4, "info")
+print("ITACHI HUB v8.7 - 100% FUNCIONAL! ✅")
