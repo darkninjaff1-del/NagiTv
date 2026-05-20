@@ -861,17 +861,36 @@ UserInputService.InputChanged:Connect(function(input)
         FloatingBtn.Position = UDim2.new(floatStartPos.X.Scale, floatStartPos.X.Offset + delta.X, floatStartPos.Y.Scale, floatStartPos.Y.Offset + delta.Y)
     end
 end)
+-- CORREÇÃO: Usar MouseButton1Down e MouseMoved
+sbtn.MouseButton1Down:Connect(function()
+    draggingSlider = true
+end)
+
+-- Capturar movimento do mouse globalmente
+local mouseConnection
+sbtn.MouseButton1Down:Connect(function()
+    draggingSlider = true
+    mouseConnection = UserInputService.InputChanged:Connect(function(input)
+        if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local p = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+            local val = math.floor(min + (max - min) * p)
+            fill.Size = UDim2.new(p, 0, 1, 0)
+            sbtn.Position = UDim2.new(p, -7, 0.5, -7)
+            lbl.Text = name .. ": " .. val
+            if callback then pcall(function() callback(val) end) end
+        end
+    end)
+end)
+
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local wasDrag = floatDragging and floatDragStart and (input.Position - floatDragStart).Magnitude > 5
-        floatDragging = false
-        if not wasDrag then
-            PlaySound("9116338042", 0.2)
-            MainFrame.Visible = not MainFrame.Visible
+        draggingSlider = false
+        if mouseConnection then
+            mouseConnection:Disconnect()
+            mouseConnection = nil
         end
     end
 end)
-
 -- CORREÇÃO 7: CloseBtn não destrói tudo
 MinimizeBtn.MouseButton1Click:Connect(function() PlaySound("9116338042", 0.2); MainFrame.Visible = false end)
 CloseBtn.MouseButton1Click:Connect(function() PlaySound("9116338042", 0.2); ScreenGui.Enabled = false end)
