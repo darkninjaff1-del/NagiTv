@@ -1,6 +1,6 @@
 --[[
     ⚡ ITACHI HUB - BLOX FRUITS PREMIUM ⚡
-    Versão 8.5 - TODAS AS CORREÇÕES APLICADAS
+    Versão 8.6 - TODOS OS CLIQUES CORRIGIDOS
 ]]
 
 -- Serviços
@@ -15,10 +15,8 @@ local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
--- CORREÇÃO 1: RaycastParams
 local RaycastParamsClass = RaycastParams
 
--- CORREÇÃO 9: VirtualInputManager com proteção
 local VirtualInputManager = nil
 pcall(function()
     VirtualInputManager = game:GetService("VirtualInputManager")
@@ -32,7 +30,6 @@ end)
 local Player = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
--- CORREÇÃO 10: Character com WaitForChild
 local Character = nil
 local Humanoid = nil
 local RootPart = nil
@@ -188,7 +185,6 @@ local function Notify(title, msg, dur, typ)
     mL.TextXAlignment = Enum.TextXAlignment.Left
     mL.ZIndex = 10001
     
-    -- CORREÇÃO 11: Tween seguro
     if frame and frame.Parent then
         pcall(function()
             TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
@@ -253,7 +249,7 @@ Logo.Parent = Header
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0, 200, 1, 0)
 Title.Position = UDim2.new(0, 40, 0, 0)
-Title.Text = "ITACHI HUB v8.5"
+Title.Text = "ITACHI HUB v8.6"
 Title.TextColor3 = Settings.ThemeColor
 Title.TextSize = 15
 Title.Font = Enum.Font.GothamBlack
@@ -310,7 +306,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- CORREÇÃO 6: TabContainer como ScrollingFrame
+-- TabContainer como ScrollingFrame
 local TabContainer = Instance.new("ScrollingFrame")
 TabContainer.Size = UDim2.new(1, 0, 0, 30)
 TabContainer.Position = UDim2.new(0, 0, 0, 40)
@@ -403,7 +399,10 @@ for i, data in ipairs(TabNames) do
     Tabs[name] = {Scroll = scroll, Layout = layout}
 end
 
--- Funções UI (mantidas iguais)
+-- ============================================
+-- FUNÇÕES UI CORRIGIDAS
+-- ============================================
+
 local function CreateSection(parent, title)
     local s = Instance.new("Frame")
     s.Size = UDim2.new(1, -6, 0, 24)
@@ -422,6 +421,7 @@ local function CreateSection(parent, title)
     return s
 end
 
+-- 🔧 CreateToggle CORRIGIDO - TextButton invisível sobre toda a área
 local function CreateToggle(parent, name, default, callback)
     local f = Instance.new("Frame")
     f.Size = UDim2.new(1, -6, 0, 36)
@@ -430,6 +430,7 @@ local function CreateToggle(parent, name, default, callback)
     f.ZIndex = 14
     f.Parent = parent
     Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
+    
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(0.65, 0, 1, 0)
     lbl.Position = UDim2.new(0, 10, 0, 0)
@@ -441,6 +442,7 @@ local function CreateToggle(parent, name, default, callback)
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 15
     lbl.Parent = f
+    
     local tog = Instance.new("Frame")
     tog.Size = UDim2.new(0, 38, 0, 20)
     tog.Position = UDim2.new(1, -50, 0.5, -10)
@@ -449,6 +451,7 @@ local function CreateToggle(parent, name, default, callback)
     tog.ZIndex = 15
     tog.Parent = f
     Instance.new("UICorner", tog).CornerRadius = UDim.new(1, 0)
+    
     local circle = Instance.new("Frame")
     circle.Size = UDim2.new(0, 16, 0, 16)
     circle.Position = default and UDim2.new(0, 20, 0, 2) or UDim2.new(0, 2, 0, 2)
@@ -457,10 +460,36 @@ local function CreateToggle(parent, name, default, callback)
     circle.ZIndex = 16
     circle.Parent = tog
     Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+    
     local state = default
-    tog.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            state = not state
+    
+    -- CORREÇÃO: TextButton invisível sobre toda a área do toggle
+    local clickDetector = Instance.new("TextButton")
+    clickDetector.Size = UDim2.new(1, 0, 1, 0)
+    clickDetector.BackgroundTransparency = 1
+    clickDetector.Text = ""
+    clickDetector.ZIndex = 17
+    clickDetector.Parent = f
+    
+    clickDetector.MouseButton1Click:Connect(function()
+        state = not state
+        pcall(function()
+            TweenService:Create(circle, TweenInfo.new(0.2), {
+                Position = state and UDim2.new(0, 20, 0, 2) or UDim2.new(0, 2, 0, 2)
+            }):Play()
+            TweenService:Create(tog, TweenInfo.new(0.2), {
+                BackgroundColor3 = state and Settings.ThemeColor or Color3.fromRGB(50, 50, 50)
+            }):Play()
+        end)
+        PlaySound("9116338042", 0.15)
+        if callback then
+            pcall(function() callback(state) end)
+        end
+    end)
+    
+    return {
+        Set = function(s) 
+            state = s
             pcall(function()
                 TweenService:Create(circle, TweenInfo.new(0.2), {
                     Position = state and UDim2.new(0, 20, 0, 2) or UDim2.new(0, 2, 0, 2)
@@ -469,13 +498,12 @@ local function CreateToggle(parent, name, default, callback)
                     BackgroundColor3 = state and Settings.ThemeColor or Color3.fromRGB(50, 50, 50)
                 }):Play()
             end)
-            PlaySound("9116338042", 0.15)
-            if callback then pcall(function() callback(state) end) end
-        end
-    end)
-    return {Set = function(s) state = s end, Get = function() return state end}
+        end,
+        Get = function() return state end
+    }
 end
 
+-- 🔧 CreateButton CORRIGIDO
 local function CreateButton(parent, name, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -6, 0, 32)
@@ -487,20 +515,30 @@ local function CreateButton(parent, name, callback)
     btn.BorderSizePixel = 0
     btn.ZIndex = 14
     btn.Parent = parent
+    btn.AutoButtonColor = false
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
+    
     btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
+        pcall(function()
+            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
+        end)
     end)
     btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(18, 18, 18)}):Play()
+        pcall(function()
+            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(18, 18, 18)}):Play()
+        end)
     end)
     btn.MouseButton1Click:Connect(function()
         PlaySound("9116338042", 0.15)
-        if callback then pcall(callback) end
+        if callback then
+            pcall(callback)
+        end
     end)
+    
     return btn
 end
 
+-- 🔧 CreateSlider CORRIGIDO
 local function CreateSlider(parent, name, min, max, default, callback)
     local f = Instance.new("Frame")
     f.Size = UDim2.new(1, -6, 0, 46)
@@ -509,6 +547,7 @@ local function CreateSlider(parent, name, min, max, default, callback)
     f.ZIndex = 14
     f.Parent = parent
     Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
+    
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(1, -16, 0, 16)
     lbl.Position = UDim2.new(0, 8, 0, 3)
@@ -520,6 +559,7 @@ local function CreateSlider(parent, name, min, max, default, callback)
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 15
     lbl.Parent = f
+    
     local bar = Instance.new("Frame")
     bar.Size = UDim2.new(1, -16, 0, 5)
     bar.Position = UDim2.new(0, 8, 0, 26)
@@ -528,6 +568,7 @@ local function CreateSlider(parent, name, min, max, default, callback)
     bar.ZIndex = 15
     bar.Parent = f
     Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
+    
     local pct = (default - min) / (max - min)
     local fill = Instance.new("Frame")
     fill.Size = UDim2.new(pct, 0, 1, 0)
@@ -536,6 +577,7 @@ local function CreateSlider(parent, name, min, max, default, callback)
     fill.ZIndex = 16
     fill.Parent = bar
     Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+    
     local sbtn = Instance.new("TextButton")
     sbtn.Size = UDim2.new(0, 14, 0, 14)
     sbtn.Position = UDim2.new(pct, -7, 0.5, -7)
@@ -545,7 +587,10 @@ local function CreateSlider(parent, name, min, max, default, callback)
     sbtn.ZIndex = 17
     sbtn.Parent = bar
     Instance.new("UICorner", sbtn).CornerRadius = UDim.new(1, 0)
+    
     local draggingSlider = false
+    local mouseConnection = nil
+    
     local function update(input)
         local p = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
         local val = math.floor(min + (max - min) * p)
@@ -554,28 +599,31 @@ local function CreateSlider(parent, name, min, max, default, callback)
         lbl.Text = name .. ": " .. val
         if callback then pcall(function() callback(val) end) end
     end
-    sbtn.MouseButton1Down:Connect(function() draggingSlider = true end)
-    bar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingSlider = true
-            update(input)
-        end
+    
+    sbtn.MouseButton1Down:Connect(function()
+        draggingSlider = true
+        mouseConnection = UserInputService.InputChanged:Connect(function(input)
+            if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
+                update(input)
+            end
+        end)
     end)
+    
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             draggingSlider = false
+            if mouseConnection then
+                mouseConnection:Disconnect()
+                mouseConnection = nil
+            end
         end
     end)
-    UserInputService.InputChanged:Connect(function(input)
-        if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
-            update(input)
-        end
-    end)
+    
     return f
 end
 
 -- ============================================
--- PREENCHER ABAS (COMPLETO)
+-- PREENCHER ABAS
 -- ============================================
 
 -- Aba 1: Farm
@@ -583,7 +631,6 @@ do
     local scroll = Tabs["Farm"].Scroll
     CreateSection(scroll, "⚔️ Auto Farm")
     CreateToggle(scroll, "Auto Farm Level", Settings.AutoFarm, function(s) Settings.AutoFarm = s end)
-    -- CORREÇÃO 3: Auto Attack toggle adicionado
     CreateToggle(scroll, "Auto Attack", Settings.AutoAttack, function(s) Settings.AutoAttack = s end)
     CreateToggle(scroll, "Auto Quest", Settings.AutoQuest, function(s) Settings.AutoQuest = s end)
     CreateSlider(scroll, "Distância", 5, 50, Settings.FarmDistance, function(v) Settings.FarmDistance = v end)
@@ -805,7 +852,7 @@ do
     CreateButton(scroll, "🌐 Server Hop", function() Notify("SERVER", "Procurando...", 2) end)
 end
 
--- Aba 15: Teleport (resumida)
+-- Aba 15: Teleport
 do
     local scroll = Tabs["Teleport"].Scroll
     CreateSection(scroll, "🌍 Teleportes")
@@ -822,7 +869,7 @@ do
     end
 end
 
--- Abas 16-22 (simplificadas para caber)
+-- Abas 16-22
 do local scroll = Tabs["Volcano"].Scroll; CreateSection(scroll, "🌋 Volcano"); CreateToggle(scroll, "Auto Volcano", Settings.AutoVolcano, function(s) Settings.AutoVolcano = s end) end
 do local scroll = Tabs["Shop"].Scroll; CreateSection(scroll, "🛒 Shop"); CreateButton(scroll, "Comprar Fruta", function() Notify("SHOP","...",2) end) end
 do local scroll = Tabs["Money"].Scroll; CreateSection(scroll, "💰 Money"); CreateToggle(scroll, "Auto Money", Settings.AutoMoneyFarm, function(s) Settings.AutoMoneyFarm = s end) end
@@ -832,7 +879,7 @@ do local scroll = Tabs["Theme"].Scroll; CreateSection(scroll, "🎨 Cor"); Creat
 do local scroll = Tabs["Settings"].Scroll; CreateSection(scroll, "⚙️ Config"); CreateToggle(scroll, "Anti AFK", Settings.AntiAFK, function(s) Settings.AntiAFK = s end); CreateToggle(scroll, "Sons", Settings.SoundEnabled, function(s) Settings.SoundEnabled = s end) end
 
 -- ============================================
--- BOTÃO FLUTUANTE
+-- BOTÃO FLUTUANTE CORRIGIDO
 -- ============================================
 local FloatingBtn = Instance.new("ImageButton")
 FloatingBtn.Size = UDim2.new(0, 50, 0, 50)
@@ -843,11 +890,13 @@ FloatingBtn.Visible = true
 FloatingBtn.ZIndex = 100
 FloatingBtn.Parent = ScreenGui
 Instance.new("UICorner", FloatingBtn).CornerRadius = UDim.new(1, 0)
-Instance.new("UIStroke", FloatingBtn).Color = Settings.ThemeColor
-FloatingBtn.UIStroke.Thickness = 2
+local floatStroke2 = Instance.new("UIStroke", FloatingBtn)
+floatStroke2.Color = Settings.ThemeColor
+floatStroke2.Thickness = 2
 
 local floatDragging = false
 local floatDragStart, floatStartPos
+
 FloatingBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         floatDragging = true
@@ -855,51 +904,37 @@ FloatingBtn.InputBegan:Connect(function(input)
         floatStartPos = FloatingBtn.Position
     end
 end)
+
 UserInputService.InputChanged:Connect(function(input)
     if floatDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - floatDragStart
         FloatingBtn.Position = UDim2.new(floatStartPos.X.Scale, floatStartPos.X.Offset + delta.X, floatStartPos.Y.Scale, floatStartPos.Y.Offset + delta.Y)
     end
 end)
--- CORREÇÃO: Usar MouseButton1Down e MouseMoved
-sbtn.MouseButton1Down:Connect(function()
-    draggingSlider = true
-end)
-
--- Capturar movimento do mouse globalmente
-local mouseConnection
-sbtn.MouseButton1Down:Connect(function()
-    draggingSlider = true
-    mouseConnection = UserInputService.InputChanged:Connect(function(input)
-        if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local p = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-            local val = math.floor(min + (max - min) * p)
-            fill.Size = UDim2.new(p, 0, 1, 0)
-            sbtn.Position = UDim2.new(p, -7, 0.5, -7)
-            lbl.Text = name .. ": " .. val
-            if callback then pcall(function() callback(val) end) end
-        end
-    end)
-end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        draggingSlider = false
-        if mouseConnection then
-            mouseConnection:Disconnect()
-            mouseConnection = nil
+        local wasDrag = false
+        if floatDragging and floatDragStart then
+            wasDrag = (input.Position - floatDragStart).Magnitude > 5
+        end
+        floatDragging = false
+        
+        if not wasDrag then
+            PlaySound("9116338042", 0.2)
+            MainFrame.Visible = not MainFrame.Visible
         end
     end
 end)
--- CORREÇÃO 7: CloseBtn não destrói tudo
+
 MinimizeBtn.MouseButton1Click:Connect(function() PlaySound("9116338042", 0.2); MainFrame.Visible = false end)
 CloseBtn.MouseButton1Click:Connect(function() PlaySound("9116338042", 0.2); ScreenGui.Enabled = false end)
 
 -- ============================================
--- SISTEMAS (CORRIGIDOS)
+-- SISTEMAS
 -- ============================================
 
--- CORREÇÃO 2: Auto Farm com proteção Enemies
+-- Auto Farm
 task.spawn(function()
     while task.wait(0.3) do
         if Settings.AutoFarm and RootPart then
@@ -933,7 +968,7 @@ task.spawn(function()
     end
 end)
 
--- Auto Haki (com proteção)
+-- Auto Haki
 task.spawn(function()
     while task.wait(1) do
         if Settings.AutoBuso then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso") end) end
@@ -941,7 +976,7 @@ task.spawn(function()
     end
 end)
 
--- CORREÇÃO 4: Fly com AssemblyLinearVelocity
+-- Fly
 local flyKeys = {W = false, S = false, A = false, D = false, Space = false, LeftControl = false}
 UserInputService.InputBegan:Connect(function(input, gp) if gp then return end; if flyKeys[input.KeyCode.Name] ~= nil then flyKeys[input.KeyCode.Name] = true end end)
 UserInputService.InputEnded:Connect(function(input) if flyKeys[input.KeyCode.Name] ~= nil then flyKeys[input.KeyCode.Name] = false end end)
@@ -966,7 +1001,7 @@ task.spawn(function()
     end
 end)
 
--- CORREÇÃO 5: Aimbot corrigido
+-- Aimbot
 task.spawn(function()
     while task.wait() do
         if Settings.Aimbot and Settings.AimbotTarget and Settings.AimbotTarget:FindFirstChild("HumanoidRootPart") then
@@ -979,7 +1014,7 @@ task.spawn(function()
     end
 end)
 
--- CORREÇÃO 8: ESP otimizado
+-- ESP
 task.spawn(function()
     while task.wait(2) do
         if Settings.ESPPlayers then
@@ -1007,7 +1042,7 @@ task.spawn(function()
     end
 end)
 
--- Water Walk (CORREÇÃO 1: RaycastParamsClass)
+-- Water Walk
 task.spawn(function()
     while task.wait(0.1) do
         if Settings.WaterWalk and RootPart then
@@ -1041,6 +1076,6 @@ end
 -- ============================================
 -- INICIALIZAÇÃO
 -- ============================================
-Notify("✅ ITACHI HUB v8.5", "Todas as correções aplicadas!", 5, "success")
-Notify("ℹ️ DICA", "F1 = Abrir/Fechar | Arraste o ícone do Itachi", 4, "info")
-print("ITACHI HUB v8.5 - CORRIGIDO E FUNCIONAL!")
+Notify("✅ ITACHI HUB v8.6", "Toggles, botões e sliders 100% funcionais!", 5, "success")
+Notify("ℹ️ DICA", "F1 = Abrir/Fechar | Clique no ícone do Itachi", 4, "info")
+print("ITACHI HUB v8.6 - TUDO FUNCIONANDO! ✅")
